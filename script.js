@@ -1,14 +1,16 @@
 
+
 async function uploadToGitHub(file) {
-  const token = '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'; // Replace with your GitHub token
-  const repo = 'endboedy/Work-Order'; // Replace with your GitHub repo name
-  const path = `data/${file.name}`;
+  const token = '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'; // Ganti dengan token GitHub kamu
+  const repo = 'endboedy/Work-Order'; // Ganti dengan nama repo kamu
+  const path = `data/${file.name}`; // Path penyimpanan di folder 'data' dalam repo
   const apiUrl = `https://api.github.com/repos/${repo}/contents/${path}`;
 
-  try {
-    const reader = new FileReader();
-    reader.onload = async function () {
-      const base64Content = btoa(reader.result);
+  const reader = new FileReader();
+  reader.onload = async function () {
+    const base64Content = btoa(reader.result);
+
+    try {
       const response = await fetch(apiUrl, {
         method: 'PUT',
         headers: {
@@ -20,6 +22,24 @@ async function uploadToGitHub(file) {
           content: base64Content
         })
       });
+
+      const result = await response.json();
+      if (response.ok) {
+        alert(`✅ Upload berhasil: ${file.name}`);
+        console.log(result);
+      } else {
+        alert(`❌ Gagal upload: ${result.message}`);
+        console.error(result);
+      }
+    } catch (error) {
+      alert('❌ Error saat upload ke GitHub');
+      console.error(error);
+    }
+  };
+
+  reader.readAsBinaryString(file);
+}
+
 
       const result = await response.json();
       const statusElement = document.getElementById('uploadStatus');
