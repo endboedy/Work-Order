@@ -1,0 +1,255 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Monitoring Work Order</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto Condensed', sans-serif;
+            font-size: 11px;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 10px;
+            text-align: center;
+        }
+        nav {
+            display: flex;
+            background-color: #34495e;
+        }
+        nav button {
+            flex: 1;
+            padding: 10px;
+            background-color: #34495e;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        nav button.active {
+            background-color: #1abc9c;
+        }
+        section {
+            display: none;
+            padding: 10px;
+        }
+        section.active {
+            display: block;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 4px;
+            text-align: left;
+        }
+        th {
+            cursor: pointer;
+            background-color: #ecf0f1;
+        }
+        .filter-group {
+            margin-top: 10px;
+        }
+        .filter-group input {
+            margin-right: 5px;
+        }
+        .filter-group button {
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Monitoring Work Order</h1>
+    </header>
+    <nav>
+        <button onclick="showSection('upload')" class="active">Upload File</button>
+        <button onclick="showSection('monitoring')">Monitoring Work Order</button>
+        <button onclick="showSection('detail')">Detail Work Order</button>
+        <button onclick="showSection('external')">External Job</button>
+    </nav>
+
+    <section id="upload" class="active">
+        <h2>Upload File</h2>
+        <input type="file" id="fileInput" multiple accept=".xlsx,.xls">
+        <button onclick="simulateUpload()">Upload</button>
+        <div id="uploadStatus"></div>
+    </section>
+
+    <section id="monitoring">
+        <h2>Monitoring Work Order</h2>
+        <div class="filter-group">
+            <input type="text" id="filterRoom" placeholder="Room">
+            <input type="text" id="filterOrder" placeholder="Order">
+            <input type="text" id="filterMAT" placeholder="MAT">
+            <input type="text" id="filterSection" placeholder="Section">
+            <input type="text" id="filterCPH" placeholder="CPH">
+            <input type="text" id="filterStatusPart" placeholder="Status Part">
+            <button onclick="applyFilter('monitoringTable')">Aktifkan Filter</button>
+            <button onclick="clearFilter('monitoringTable')">Clear</button>
+        </div>
+        <table id="monitoringTable">
+            <thead>
+                <tr>
+                    <th onclick="sortTable(this)">Room</th>
+                    <th onclick="sortTable(this)">Order Type</th>
+                    <th onclick="sortTable(this)">Order</th>
+                    <th onclick="sortTable(this)">Description</th>
+                    <th onclick="sortTable(this)">Created On</th>
+                    <th onclick="sortTable(this)">User Status</th>
+                    <th onclick="sortTable(this)">MAT</th>
+                    <th onclick="sortTable(this)">CPH</th>
+                    <th onclick="sortTable(this)">Section</th>
+                    <th onclick="sortTable(this)">Status Part</th>
+                    <th onclick="sortTable(this)">Aging</th>
+                    <th onclick="sortTable(this)">Month</th>
+                    <th onclick="sortTable(this)">Cost</th>
+                    <th onclick="sortTable(this)">Event Start</th>
+                    <th onclick="sortTable(this)">Status</th>
+                    <th onclick="sortTable(this)">Target Date</th>
+                    <th onclick="sortTable(this)">End Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="17">isi conten</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section id="detail">
+        <h2>Detail Work Order</h2>
+        <div class="filter-group">
+            <input type="text" id="filterOrderNumber" placeholder="Order Number">
+            <input type="text" id="filterMaterialNumber" placeholder="Material Number">
+            <input type="text" id="filterMaterialDescription" placeholder="Material Description">
+            <button onclick="applyFilter('detailTable')">Aktifkan Filter</button>
+            <button onclick="clearFilter('detailTable')">Clear</button>
+        </div>
+        <table id="detailTable">
+            <thead>
+                <tr>
+                    <th onclick="sortTable(this)">Room</th>
+                    <th onclick="sortTable(this)">Order Number</th>
+                    <th onclick="sortTable(this)">Description</th>
+                    <th onclick="sortTable(this)">WO User Status</th>
+                    <th onclick="sortTable(this)">Material Number</th>
+                    <th onclick="sortTable(this)">Material Description</th>
+                    <th onclick="sortTable(this)">Req</th>
+                    <th onclick="sortTable(this)">Stock</th>
+                    <th onclick="sortTable(this)">Qry With</th>
+                    <th onclick="sortTable(this)">Outs With</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="10">isi conten</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section id="external">
+        <h2>External Job</h2>
+        <div class="filter-group">
+            <input type="text" id="filterRoomExt" placeholder="Room">
+            <input type="text" id="filterOrderNumberExt" placeholder="Order Number">
+            <input type="text" id="filterPurchasingDoc" placeholder="Purchasing Document Number">
+            <button onclick="applyFilter('externalTable')">Aktifkan Filter</button>
+            <button onclick="clearFilter('externalTable')">Clear</button>
+        </div>
+        <table id="externalTable">
+            <thead>
+                <tr>
+                    <th onclick="sortTable(this)">Room</th>
+                    <th onclick="sortTable(this)">Manufacturer model number</th>
+                    <th onclick="sortTable(this)">Order Number</th>
+                    <th onclick="sortTable(this)">Order Type</th>
+                    <th onclick="sortTable(this)">Maintenance activity type</th>
+                    <th onclick="sortTable(this)">Field displaying user status</th>
+                    <th onclick="sortTable(this)">Notification Type</th>
+                    <th onclick="sortTable(this)">Description</th>
+                    <th onclick="sortTable(this)">WO Created</th>
+                    <th onclick="sortTable(this)">Date Release</th>
+                    <th onclick="sortTable(this)">Priority Text</th>
+                    <th onclick="sortTable(this)">Aging WO</th>
+                    <th onclick="sortTable(this)">Net Price in Purchasing Document (in Doc</th>
+                    <th onclick="sortTable(this)">Net Price in PO USD</th>
+                    <th onclick="sortTable(this)">Planner Group for Customer Service and P</th>
+                    <th onclick="sortTable(this)">Cost Element</th>
+                    <th onclick="sortTable(this)">Service number</th>
+                    <th onclick="sortTable(this)">Service Short Text</th>
+                    <th onclick="sortTable(this)">Name</th>
+                    <th onclick="sortTable(this)">Purchase Requisition Number</th>
+                    <th onclick="sortTable(this)">Purchasing Document Number</th>
+                    <th onclick="sortTable(this)">Account Number of Supplier</th>
+                    <th onclick="sortTable(this)">Entry Sheet Number</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="23">isi conten</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <script>
+        function showSection(id) {
+            document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('section').forEach(sec => sec.classList.remove('active'));
+            document.querySelector('nav button[onclick="showSection(\'' + id + '\')"]').classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+
+        function sortTable(header) {
+            const table = header.closest('table');
+            const index = Array.from(header.parentNode.children).indexOf(header);
+            const rows = Array.from(table.querySelectorAll('tbody tr'));
+            const asc = !header.classList.contains('asc');
+            rows.sort((a, b) => {
+                const cellA = a.children[index].innerText.toLowerCase();
+                const cellB = b.children[index].innerText.toLowerCase();
+                return asc ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+            });
+            table.querySelector('tbody').innerHTML = '';
+            rows.forEach(row => table.querySelector('tbody').appendChild(row));
+            table.querySelectorAll('th').forEach(th => th.classList.remove('asc', 'desc'));
+            header.classList.add(asc ? 'asc' : 'desc');
+        }
+
+        function applyFilter(tableId) {
+            const table = document.getElementById(tableId);
+            const filters = Array.from(table.previousElementSibling.querySelectorAll('input')).map(input => input.value.toLowerCase());
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const cells = Array.from(row.children).map(cell => cell.innerText.toLowerCase());
+                const match = filters.every((filter, i) => !filter || cells[i].includes(filter));
+                row.style.display = match ? '' : 'none';
+            });
+        }
+
+        function clearFilter(tableId) {
+            const table = document.getElementById(tableId);
+            table.previousElementSibling.querySelectorAll('input').forEach(input => input.value = '');
+            table.querySelectorAll('tbody tr').forEach(row => row.style.display = '');
+        }
+
+        function simulateUpload() {
+            const files = document.getElementById('fileInput').files;
+            const statusDiv = document.getElementById('uploadStatus');
+            statusDiv.innerHTML = '';
+            Array.from(files).forEach(file => {
+                const p = document.createElement('p');
+                p.textContent = `Uploading ${file.name}...`;
+                statusDiv.appendChild(p);
+                setTimeout(() => {
+                    p.textContent = `${file.name} uploaded successfully.`;
+                }, 1000);
+            });
+        }
+    </script>
+</body>
+</html>
