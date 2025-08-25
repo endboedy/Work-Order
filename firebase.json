@@ -1,6 +1,6 @@
 {
-  "projects": {
-    "default": "work-order-7ad3c"
+  "hosting": {
+    "public": "dist",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
   }
 }
-
