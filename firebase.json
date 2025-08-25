@@ -1,13 +1,7 @@
+
 {
-  "hosting": [
-    {
-      "target": "work-order-7ad3c-470100",
-      "public": "dist",
-      "ignore": [
-        "firebase.json",
-        "**/.*",
-        "**/node_modules/**"
-      ]
-    }
-  ]
+  "hosting": {
+    "public": ".",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
+  }
 }
