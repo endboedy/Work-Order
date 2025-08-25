@@ -1,4 +1,3 @@
-
 name: Deploy to Firebase Hosting
 
 on:
@@ -22,8 +21,8 @@ jobs:
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
-      - name: Build project (optional)
+      - name: "Build project (optional)"
         run: echo "No build step, just static files"
 
-      - name: Deploy to Firebase Hosting
+      - name: "Deploy to Firebase Hosting (target: work-order-7ad3c-470100)"
         run: "firebase deploy --only hosting:work-order-7ad3c-470100 --project work-order-7ad3c-470100"
