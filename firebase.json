@@ -1,7 +1,8 @@
+
 {
   "hosting": [
     {
-      "target": "your-target-name",
+      "target": "work-order-7ad3c",
       "public": "dist"
     }
   ]
