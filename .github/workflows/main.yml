@@ -18,6 +18,9 @@ jobs:
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
+          scopes: |
+            https://www.googleapis.com/auth/cloud-platform
+            https://www.googleapis.com/auth/firebase
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
