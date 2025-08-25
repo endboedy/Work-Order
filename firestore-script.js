@@ -1,6 +1,4 @@
-
 const admin = require('firebase-admin');
-
 const serviceAccount = JSON.parse(process.env.GCP_SA_KEY);
 
 admin.initializeApp({
@@ -10,10 +8,14 @@ admin.initializeApp({
 const db = admin.firestore();
 
 async function run() {
-  const snapshot = await db.collection('your-collection').get();
-  snapshot.forEach(doc => {
-    console.log(doc.id, '=>', doc.data());
-  });
+  try {
+    const snapshot = await db.collection('your-collection').get();
+    snapshot.forEach(doc => {
+      console.log(doc.id, '=>', doc.data());
+    });
+  } catch (error) {
+    console.error('Error:', error);
+  }
 }
 
 run();
