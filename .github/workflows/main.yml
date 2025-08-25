@@ -26,4 +26,4 @@ jobs:
         run: echo "No build step, just static files"
 
       - name: Deploy to Firebase Hosting
-        run: firebase deploy --only hosting:work-order-7ad3c --project work-order-7ad3c
+        run: firebase deploy --only hosting:work-order-7ad3c-470100 --project work-order-7ad3c
