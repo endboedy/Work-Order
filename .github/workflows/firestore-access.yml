@@ -12,11 +12,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Get Access Token
+        id: auth
+        run: |
+          echo "ACCESS_TOKEN=$(gcloud auth print-access-token)" >> $GITHUB_ENV
+
       - name: Access Firestore via REST API
         env:
-          FIREBASE_PROJECT_ID: your-project-id
-          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          PROJECT_ID: work-order-7ad3c
         run: |
           curl -X GET \
-            "https://firestore.googleapis.com/v1/projects/$FIREBASE_PROJECT_ID/databases/(default)/documents/your-collection" \
-            -H "Authorization: Bearer $FIREBASE_API_KEY"
+            "https://firestore.googleapis.com/v1/projects/$PROJECT_ID/databases/(default)/documents/your-collection" \
+            -H "Authorization: Bearer $ACCESS_TOKEN"
