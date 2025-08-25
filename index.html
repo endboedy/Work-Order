@@ -156,7 +156,7 @@
       try {
         const file = input.files[0];
         const data = await file.arrayBuffer();
-        const workbook = XLSX.read(data);
+        const workbook = XLSX.read(data, { type: "array" });
         const sheetName = workbook.SheetNames[0];
         const sheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
