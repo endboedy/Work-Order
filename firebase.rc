@@ -1,11 +1,8 @@
 {
-  "projects": {
-    "default": "work-order-7ad3c"
-  },
   "targets": {
     "work-order-7ad3c": {
       "hosting": {
-        "work-order-7ad3c": [
+        "work-order-7ad3c-470100": [
           "work-order-7ad3c-470100"
         ]
       }
