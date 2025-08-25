@@ -23,10 +23,10 @@ jobs:
       - name: Access Firestore via REST API
         env:
           PROJECT_ID: work-order-7ad3c
-          COLLECTION_NAME: your-collection
+          COLLECTION_NAME: IW39 # Ganti dengan nama koleksi Firestore kamu (IW39, SUM57, DET, Planning, External Job, Equip Administrator, Part Number, Data1, Data2)
         run: |
           RESPONSE=$(curl -X GET \
-          "https://firestore.googleapis.com/v1/projects/$PROJECT_ID/databases/(default)/documents/$COLLECTION_NAME" \
+          "https://firestore.googleapis.com/v1/projects/$PROJECT_ID/databases/(default)/documents/Work-Order/data/$COLLECTION_NAME" \
           -H "Authorization: Bearer $ACCESS_TOKEN")
 
           if [ $? -eq 0 ]; then
@@ -36,4 +36,3 @@ jobs:
             echo "Firestore access failed"
             exit 1
           fi
-```
