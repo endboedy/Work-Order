@@ -2,7 +2,24 @@
   "hosting": [
     {
       "target": "work-order-7ad3c-470100",
-      "public": "dist"
+      "public": "dist",
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ],
+      "headers": [
+        {
+          "source": "**/*.@(jpg|jpeg|gif|png)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "max-age=7200"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
