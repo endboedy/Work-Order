@@ -8,7 +8,6 @@ on:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -25,4 +24,5 @@ jobs:
         run: echo "No build step, just static files"
 
       - name: "Deploy to Firebase Hosting (target: work-order-7ad3c-470100)"
-        run: "firebase deploy --only hosting:work-order-7ad3c-470100 --project work-order-7ad3c-470100"
+        run: |
+          firebase deploy --only hosting:work-order-7ad3c-470100 --project work-order-7ad3c-470100
