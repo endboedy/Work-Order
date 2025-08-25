@@ -1,4 +1,3 @@
-
 name: Access Firestore
 
 on:
@@ -7,7 +6,6 @@ on:
 jobs:
   firestore_job:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -25,7 +23,17 @@ jobs:
       - name: Access Firestore via REST API
         env:
           PROJECT_ID: work-order-7ad3c
+          COLLECTION_NAME: your-collection
         run: |
-          curl -X GET \
-            "https://firestore.googleapis.com/v1/projects/$PROJECT_ID/databases/(default)/documents/your-collection" \
-            -H "Authorization: Bearer $ACCESS_TOKEN"
+          RESPONSE=$(curl -X GET \
+          "https://firestore.googleapis.com/v1/projects/$PROJECT_ID/databases/(default)/documents/$COLLECTION_NAME" \
+          -H "Authorization: Bearer $ACCESS_TOKEN")
+
+          if [ $? -eq 0 ]; then
+            echo "Firestore access successful"
+            echo "$RESPONSE"
+          else
+            echo "Firestore access failed"
+            exit 1
+          fi
+```
