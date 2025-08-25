@@ -1,3 +1,4 @@
+
 name: Deploy to Firebase Hosting
 
 on:
@@ -26,4 +27,3 @@ jobs:
 
       - name: Deploy to Firebase Hosting (target: work-order-7ad3c-470100)
         run: "firebase deploy --only hosting:work-order-7ad3c-470100 --project work-order-7ad3c-470100"
-
