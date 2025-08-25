@@ -2,7 +2,7 @@
 {
   "hosting": [
     {
-      "target": "work-order-7ad3c",
+      "target": "work-order-7ad3c-470100",
       "public": "dist"
     }
   ]
