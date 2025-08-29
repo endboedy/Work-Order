@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html>
 <head>
     <title>WORK_ORDER_EM</title>
-    <script src="https://cdnjs.cloudflare.com/ajax18.5/xlsx.full.min.js
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body { font-family: Arial; font-size: 11px; }
         .filter-container { margin-bottom: 20px; padding: 10px; background-color: #f0f0f0; }
@@ -24,15 +23,9 @@
         <br><br>
         <input type="file" id="upload" accept=".xlsx" />
     </div>
-    <table id="wo-table">
-        <thead></thead>
-        <tbody></tbody>
-    </table>
+    <table id="wo-table"></table>
 
     <script>
-        let originalData = [];
-        let headers = [];
-
         function formatDate(excelDate) {
             if (!excelDate) return "";
             const date = new Date(Math.round((excelDate - 25569) * 86400 * 1000));
@@ -43,6 +36,23 @@
         function formatCurrency(value) {
             if (!value) return "";
             return "$" + parseInt(value).toLocaleString();
+        }
+
+        function sortTable(header) {
+            const table = header.closest("table");
+            const ths = Array.from(table.querySelectorAll("th"));
+            const index = ths.indexOf(header);
+            const rows = Array.from(table.querySelectorAll("tbody tr"));
+            const asc = !header.asc;
+            header.asc = asc;
+
+            rows.sort((a, b) => {
+                const cellA = a.cells[index].innerText;
+                const cellB = b.cells[index].innerText;
+                return asc ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+            });
+
+            rows.forEach(row => table.querySelector("tbody").appendChild(row));
         }
 
         function applyStyle(col, val) {
@@ -71,35 +81,10 @@
                 else if (val === "C") style = "background-color:black;color:white";
             }
 
-            return `style="text-align:${align};${style}"`;
+            return style="text-align:${align};${style}";
         }
 
-        function renderTable(data) {
-            const thead = document.querySelector("#wo-table thead");
-            const tbody = document.querySelector("#wo-table tbody");
-
-            thead.innerHTML = "<tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr>";
-            tbody.innerHTML = "";
-
-            data.forEach(row => {
-                const tr = document.createElement("tr");
-                headers.forEach((col, i) => {
-                    let val = row[i] || "";
-                    if (["Created On", "Planning", "Target Date", "End Date"].includes(col)) {
-                        val = formatDate(val);
-                    } else if (["Cost", "Include", "Exclude"].includes(col)) {
-                        val = formatCurrency(val);
-                    }
-                    const td = document.createElement("td");
-                    td.innerHTML = val;
-                    td.setAttribute("style", applyStyle(col, val).replace('style="', '').replace('"', ''));
-                    tr.appendChild(td);
-                });
-                tbody.appendChild(tr);
-            });
-        }
-
-        function filterData() {
+        function filterTable() {
             const room = document.getElementById("filter-room").value.toLowerCase();
             const order = document.getElementById("filter-order").value.toLowerCase();
             const mat = document.getElementById("filter-mat").value.toLowerCase();
@@ -107,23 +92,23 @@
             const cph = document.getElementById("filter-cph").value.toLowerCase();
             const status = document.getElementById("filter-status").value.toLowerCase();
 
-            const filtered = originalData.filter(row => {
-                const rowObj = Object.fromEntries(headers.map((h, i) => [h, row[i] ? row[i].toString().toLowerCase() : ""]));
-                return (
-                    rowObj["Room"].includes(room) &&
-                    rowObj["Order"].includes(order) &&
-                    rowObj["MAT"].includes(mat) &&
-                    rowObj["Section"].includes(section) &&
-                    rowObj["CPH"].includes(cph) &&
-                    rowObj["User Status"].includes(status)
-                );
-            });
+            const rows = document.querySelectorAll("#wo-table tbody tr");
 
-            renderTable(filtered);
+            rows.forEach(row => {
+                const cells = Array.from(row.cells).map(td => td.innerText.toLowerCase());
+                const show =
+                    (!room || cells.some(c => c.includes(room))) &&
+                    (!order || cells.some(c => c.includes(order))) &&
+                    (!mat || cells.some(c => c.includes(mat))) &&
+                    (!section || cells.some(c => c.includes(section))) &&
+                    (!cph || cells.some(c => c.includes(cph))) &&
+                    (!status || cells.some(c => c.includes(status)));
+                row.style.display = show ? "" : "none";
+            });
         }
 
-        document.querySelectorAll(".filter-container input").forEach(input => {
-            input.addEventListener("input", filterData);
+        document.querySelectorAll(".filter-container input[type=text]").forEach(inp => {
+            inp.addEventListener("input", filterTable);
         });
 
         document.getElementById('upload').addEventListener('change', function(e) {
@@ -134,25 +119,29 @@
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
                 const json = XLSX.utils.sheet_to_json(sheet, {header:1});
-                headers = json[0];
-                originalData = json.slice(1);
-                renderTable(originalData);
+                const header = json[0];
+                const rows = json.slice(1);
+
+                let table = "<thead><tr>" + header.map(h => <th onclick="sortTable(this)">${h}</th>).join("") + "</tr></thead><tbody>";
+                rows.forEach(row => {
+                    table += "<tr>";
+                    header.forEach((col, i) => {
+                        let val = row[i] || "";
+                        if (["Created On", "Planning", "Target Date", "End Date"].includes(col)) {
+                            val = formatDate(val);
+                        } else if (["Cost", "Include", "Exclude"].includes(col)) {
+                            val = formatCurrency(val);
+                        }
+                        const style = applyStyle(col, val);
+                        table += <td ${style}>${val}</td>;
+                    });
+                    table += "</tr>";
+                });
+                table += "</tbody>";
+
+                document.getElementById("wo-table").innerHTML = table;
             };
             reader.readAsArrayBuffer(e.target.files[0]);
-        });
-
-        document.querySelector("#wo-table thead").addEventListener("click", function(e) {
-            if (e.target.tagName === "TH") {
-                const index = Array.from(e.target.parentNode.children).indexOf(e.target);
-                const asc = !e.target.asc;
-                e.target.asc = asc;
-                originalData.sort((a, b) => {
-                    const valA = a[index] ? a[index].toString() : "";
-                    const valB = b[index] ? b[index].toString() : "";
-                    return asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
-                });
-                renderTable(originalData);
-            }
         });
     </script>
 </body>
