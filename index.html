@@ -13,6 +13,14 @@
         .menu button { margin-right: 10px; padding: 5px 10px; }
         .hidden { display: none; }
     </style>
+    <script>
+        // Didefinisikan di awal agar dikenali saat tombol diklik
+        function showTab(tabId) {
+            document.getElementById('work-order').classList.add('hidden');
+            document.getElementById('detail-part').classList.add('hidden');
+            document.getElementById(tabId).classList.remove('hidden');
+        }
+    </script>
 </head>
 <body>
     <h2>WORK_ORDER_EM</h2>
@@ -47,18 +55,12 @@
     </div>
 
     <!-- XLSX Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax18.5/xlsx.full.min.js
+    https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
 
     <!-- Main Script -->
     <script>
         let woData = [];
         let detailData = [];
-
-        function showTab(tabId) {
-            document.getElementById('work-order').classList.add('hidden');
-            document.getElementById('detail-part').classList.add('hidden');
-            document.getElementById(tabId).classList.remove('hidden');
-        }
 
         function renderTable(data, tableId) {
             const table = document.getElementById(tableId);
