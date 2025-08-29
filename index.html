@@ -38,6 +38,22 @@
             if (!value) return "";
             return "$" + parseInt(value).toLocaleString();
         }
+        function sortTable(header) {
+            const table = header.closest("table");
+            const ths = Array.from(table.querySelectorAll("th"));
+            const index = ths.indexOf(header);
+            const rows = Array.from(table.querySelector("tbody").rows);
+            const asc = !header.asc;
+            header.asc = asc;
+
+            rows.sort((a, b) => {
+                const cellA = a.cells[index].innerText;
+                const cellB = b.cells[index].innerText;
+                return asc ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+            });
+
+            rows.forEach(row => table.querySelector("tbody").appendChild(row));
+        }
 
         function applyStyle(col, val) {
             let style = "";
