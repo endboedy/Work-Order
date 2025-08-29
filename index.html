@@ -122,22 +122,25 @@
                 const header = json[0];
                 const rows = json.slice(1);
 
-                let table = "<thead><tr>" + header.map(h => <th onclick="sortTable(this)">${h}</th>).join("") + "</tr></thead><tbody>";
-                rows.forEach(row => {
-                    table += "<tr>";
-                    header.forEach((col, i) => {
-                        let val = row[i] || "";
-                        if (["Created On", "Planning", "Target Date", "End Date"].includes(col)) {
-                            val = formatDate(val);
-                        } else if (["Cost", "Include", "Exclude"].includes(col)) {
-                            val = formatCurrency(val);
-                        }
-                        const style = applyStyle(col, val);
-                        table += <td ${style}>${val}</td>;
-                    });
-                    table += "</tr>";
-                });
-                table += "</tbody>";
+                let table = "<thead><tr>" + 
+    header.map(h => <th onclick="sortTable(this)">${h}</th>).join("") + 
+    "</tr></thead><tbody>";
+
+rows.forEach(row => {
+    table += "<tr>";
+    header.forEach((col, i) => {
+        let val = row[i] || "";
+        if (["Created On", "Planning", "Target Date", "End Date"].includes(col)) {
+            val = formatDate(val);
+        } else if (["Cost", "Include", "Exclude"].includes(col)) {
+            val = formatCurrency(val);
+        }
+        const style = applyStyle(col, val);
+        table += <td ${style}>${val}</td>;
+    });
+    table += "</tr>";
+});
+table += "</tbody>";
 
                 document.getElementById("wo-table").innerHTML = table;
             };
