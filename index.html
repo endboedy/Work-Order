@@ -1,162 +1,193 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Equipment Monitoring</title>
+  <title>Aplikasi Monitoring</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
-    .tabs { display: flex; margin-bottom: 15px; }
+    .tabs { display: flex; margin-bottom: 20px; }
     .tab { padding: 10px 20px; border: 1px solid #ccc; cursor: pointer; }
     .tab.active { background: #007bff; color: white; }
-    .content { display: none; border: 1px solid #ccc; padding: 20px; }
+    .content { display: none; }
     .content.active { display: block; }
-    .file-block { margin-bottom: 15px; }
-    .status { margin-left: 10px; font-size: 0.9em; }
-    progress { width: 200px; }
+    .box { margin-bottom: 20px; padding: 10px; border: 1px solid #ddd; }
+    progress { width: 100%; }
   </style>
 </head>
 <body>
-  <h2>📊 Equipment Monitoring System</h2>
+  <h2>📊 Aplikasi Monitoring</h2>
 
-  <!-- Tab Menu -->
+  <!-- MENU -->
   <div class="tabs">
-    <div class="tab active" onclick="showTab(1)">Menu 1: Upload</div>
-    <div class="tab" onclick="showTab(2)">Menu 2: Perhitungan</div>
-    <div class="tab" onclick="showTab(3)">Menu 3</div>
-    <div class="tab" onclick="showTab(4)">Menu 4</div>
+    <div class="tab active" onclick="openTab(1)">1. Upload File</div>
+    <div class="tab" onclick="openTab(2)">2. Perhitungan</div>
+    <div class="tab" onclick="openTab(3)">3. Data Repo</div>
+    <div class="tab" onclick="openTab(4)">4. About</div>
   </div>
 
-  <!-- Konten Menu 1 -->
-  <div id="content1" class="content active">
-    <h3>Upload File Excel</h3>
-    <div id="upload-area"></div>
-  </div>
-
-  <!-- Konten Menu 2 -->
-  <div id="content2" class="content">
-    <h3>Perhitungan Data</h3>
-    <button onclick="loadData()">🔄 Hitung dari Data1.xlsx</button>
-    <pre id="calc-result">Belum ada data...</pre>
-  </div>
-
-  <!-- Konten Menu 3 -->
-  <div id="content3" class="content">
-    <h3>Menu 3</h3>
-    <p>Konten menu 3.</p>
-  </div>
-
-  <!-- Konten Menu 4 -->
-  <div id="content4" class="content">
-    <h3>Menu 4</h3>
-    <p>Konten menu 4.</p>
-  </div>
-
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-<script>
-/* === Tab Menu === */
-function showTab(n) {
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active', i===n-1));
-  document.querySelectorAll('.content').forEach((c,i)=>c.classList.toggle('active', i===n-1));
-}
-
-/* === List File Excel === */
-const files = [
-  "IW39.xlsx",
-  "SUM57.xlsx",
-  "DET.xlsx",
-  "External Job.xlsx",
-  "Planning.xlsx",
-  "Equipt Adm.xlsx",
-  "Data1.xlsx",
-  "Data2.xlsx"
-];
-
-/* === Render Upload Form === */
-const uploadArea = document.getElementById("upload-area");
-files.forEach(name => {
-  const safe = name.replace(/\s+/g,'_'); // ganti spasi jadi _
-  uploadArea.innerHTML += `
-    <div class="file-block">
-      <label>${name}:</label>
-      <input type="file" id="file-${safe}">
-      <button onclick="uploadFile('${safe}')">Upload</button>
-      <span id="status-${safe}" class="status"></span><br>
-      <progress id="progress-${safe}" value="0" max="100"></progress>
+  <!-- MENU 1 -->
+  <div id="tab1" class="content active">
+    <h3>📂 Upload File Excel</h3>
+    <div class="box">
+      <label> IW39: <input type="file" id="file-IW39"> </label>
+      <button onclick="uploadFile('IW39')">Upload</button>
+      <progress id="progress-IW39" value="0" max="100"></progress>
+      <div id="status-IW39"></div>
     </div>
-  `;
-});
+    <div class="box">
+      <label> SUM57: <input type="file" id="file-SUM57"> </label>
+      <button onclick="uploadFile('SUM57')">Upload</button>
+      <progress id="progress-SUM57" value="0" max="100"></progress>
+      <div id="status-SUM57"></div>
+    </div>
+    <div class="box">
+      <label> DET: <input type="file" id="file-DET"> </label>
+      <button onclick="uploadFile('DET')">Upload</button>
+      <progress id="progress-DET" value="0" max="100"></progress>
+      <div id="status-DET"></div>
+    </div>
+    <div class="box">
+      <label> External Job: <input type="file" id="file-ExternalJob"> </label>
+      <button onclick="uploadFile('ExternalJob')">Upload</button>
+      <progress id="progress-ExternalJob" value="0" max="100"></progress>
+      <div id="status-ExternalJob"></div>
+    </div>
+    <div class="box">
+      <label> Planning: <input type="file" id="file-Planning"> </label>
+      <button onclick="uploadFile('Planning')">Upload</button>
+      <progress id="progress-Planning" value="0" max="100"></progress>
+      <div id="status-Planning"></div>
+    </div>
+    <div class="box">
+      <label> Equipt Adm: <input type="file" id="file-EquiptAdm"> </label>
+      <button onclick="uploadFile('EquiptAdm')">Upload</button>
+      <progress id="progress-EquiptAdm" value="0" max="100"></progress>
+      <div id="status-EquiptAdm"></div>
+    </div>
+    <div class="box">
+      <label> Data1: <input type="file" id="file-Data1"> </label>
+      <button onclick="uploadFile('Data1')">Upload</button>
+      <progress id="progress-Data1" value="0" max="100"></progress>
+      <div id="status-Data1"></div>
+    </div>
+    <div class="box">
+      <label> Data2: <input type="file" id="file-Data2"> </label>
+      <button onclick="uploadFile('Data2')">Upload</button>
+      <progress id="progress-Data2" value="0" max="100"></progress>
+      <div id="status-Data2"></div>
+    </div>
+  </div>
 
-/* === Upload ke GitHub === */
-async function uploadFile(targetName) {
-  const input = document.getElementById(file-${targetName});
-  const status = document.getElementById(status-${targetName});
-  const progress = document.getElementById(progress-${targetName});
+  <!-- MENU 2 -->
+  <div id="tab2" class="content">
+    <h3>📈 Perhitungan Plan vs Actual</h3>
+    <div class="box">
+      <button onclick="hitung()">Hitung</button>
+      <div id="hasilHitung"></div>
+    </div>
+  </div>
 
-  if (!input.files.length) {
-    status.textContent = "⚠ Pilih file dulu!";
-    return;
-  }
+  <!-- MENU 3 -->
+  <div id="tab3" class="content">
+    <h3>📁 File di Repo</h3>
+    <button onclick="listFiles()">Refresh List</button>
+    <ul id="fileList"></ul>
+  </div>
 
-  const file = input.files[0];
-  const content = await file.arrayBuffer();
-  const base64 = btoa(String.fromCharCode(...new Uint8Array(content)));
+  <!-- MENU 4 -->
+  <div id="tab4" class="content">
+    <h3>ℹ About</h3>
+    <p>Aplikasi monitoring berbasis GitHub Pages</p>
+  </div>
 
-  status.textContent = "⏳ Uploading...";
-  progress.value = 50;
-
-  try {
-    const repo = "USERNAME/REPO"; // ganti dg repo kamu
-    const path = data/${file.name};
-    const url = https://api.github.com/repos/${repo}/contents/${path};
-
-    const res = await fetch(url, {
-      method: "PUT",
-      headers: {
-        "Authorization": token YOUR_TOKEN_HERE, // ⚠ nanti diganti otomatis via yml
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        message: Upload ${file.name},
-        content: base64
-      })
-    });
-
-    if (res.ok) {
-      status.textContent = "✅ Sukses upload!";
-      progress.value = 100;
-    } else {
-      status.textContent = "❌ Gagal upload!";
-      console.error(await res.text());
+  <script>
+    /* === Fungsi Tab === */
+    function openTab(n) {
+      document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active', i===n-1));
+      document.querySelectorAll('.content').forEach((el,i)=>el.classList.toggle('active', i===n-1));
     }
-  } catch (err) {
-    status.textContent = "⚠ Error!";
-    console.error(err);
-  }
-}
 
-/* === Menu 2: Contoh Perhitungan dari Data1.xlsx === */
-async function loadData() {
-  try {
-    const url = "https://raw.githubusercontent.com/USERNAME/REPO/main/data/Data1.xlsx";
-    const res = await fetch(url);
-    const buf = await res.arrayBuffer();
-    const wb = XLSX.read(buf, { type: "array" });
-    const sheet = wb.Sheets[wb.SheetNames[0]];
-    const data = XLSX.utils.sheet_to_json(sheet);
+    /* === Upload file ke GitHub === */
+    async function uploadFile(targetName) {
+      const input = document.getElementById(file-${targetName});
+      const status = document.getElementById(status-${targetName});
+      const progress = document.getElementById(progress-${targetName});
 
-    let total = 0, count = 0;
-    data.forEach(row => {
-      if (row.Value) { total += row.Value; count++; }
-    });
-    const avg = (count>0 ? total/count : 0).toFixed(2);
+      if (!input.files.length) {
+        status.textContent = "⚠ Pilih file dulu!";
+        return;
+      }
 
-    document.getElementById("calc-result").textContent =
-      Jumlah data: ${count}\nTotal: ${total}\nRata-rata: ${avg};
-  } catch (err) {
-    document.getElementById("calc-result").textContent = "❌ Error baca Data1.xlsx";
-    console.error(err);
-  }
-}
-</script>
+      const file = input.files[0];
+      const content = await file.arrayBuffer();
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(content)));
+
+      status.textContent = "⏳ Uploading...";
+      progress.value = 50;
+
+      try {
+        const repo = "USERNAME/REPO"; // ganti dengan repo kamu
+        const path = data/${file.name};
+        const url = https://api.github.com/repos/${repo}/contents/${path};
+
+        const res = await fetch(url, {
+          method: "PUT",
+          headers: {
+            "Authorization": token __GH_TOKEN__,  // diganti otomatis via YAML
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            message: Upload ${file.name},
+            content: base64
+          })
+        });
+
+        if (res.ok) {
+          status.textContent = "✅ Sukses upload!";
+          progress.value = 100;
+        } else {
+          status.textContent = "❌ Gagal upload!";
+          console.error(await res.text());
+        }
+      } catch (err) {
+        status.textContent = "⚠ Error!";
+        console.error(err);
+      }
+    }
+
+    /* === List file di repo === */
+    async function listFiles() {
+      const fileList = document.getElementById("fileList");
+      fileList.innerHTML = "⏳ Loading...";
+      try {
+        const repo = "USERNAME/REPO"; // ganti
+        const url = https://api.github.com/repos/${repo}/contents/data;
+        const res = await fetch(url, {
+          headers: { "Authorization": token __GH_TOKEN__ }
+        });
+        if (!res.ok) throw new Error("Gagal ambil list file");
+        const data = await res.json();
+        fileList.innerHTML = "";
+        data.forEach(f => {
+          const li = document.createElement("li");
+          li.textContent = f.name;
+          fileList.appendChild(li);
+        });
+      } catch (err) {
+        fileList.innerHTML = "⚠ Error ambil data";
+        console.error(err);
+      }
+    }
+
+    /* === Hitung Plan vs Actual (dummy perhitungan) === */
+    async function hitung() {
+      const hasil = document.getElementById("hasilHitung");
+      // ⚠ nanti bisa diubah ke fetch file Excel & parsing
+      const totalPlan = 20000;
+      const totalActual = 15000;
+      const rumus = (totalPlan - totalActual) / 16500;
+      hasil.textContent = Hasil = ${(rumus*100).toFixed(2)} %;
+    }
+  </script>
 </body>
 </html>
