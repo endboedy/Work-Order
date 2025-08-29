@@ -1,25 +1,19 @@
-name: Deploy ke GitHub Pages
+name: Deploy
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main  # ganti kalau branch utama kamu beda
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Build app
-        run: |
-          mkdir -p dist
-          cp index.html dist/index.html
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-
       - name: Deploy ke GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GH_TOKEN }}
-          publish_dir: ./dist
+          publish_dir: ./
