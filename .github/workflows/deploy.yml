@@ -10,6 +10,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      # 🔥 Inject GH_TOKEN ke index.html
+      - name: Inject GH_TOKEN
+        run: |
+          sed -i "s|_GH_TOKEN_|${{ secrets.GH_TOKEN }}|g" index.html
+          sed -i "s|USERNAME/REPO|USERNAME/NAMAREPO|g" index.html
+
       - name: Deploy ke GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
