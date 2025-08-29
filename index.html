@@ -3,46 +3,89 @@
 <html>
 <head>
     <title>WORK_ORDER_EM</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/ull.min.js
     <style>
         body { font-family: Arial; font-size: 11px; }
-        .filter-container { margin-bottom: 20px; padding: 10px; background-color: #f0f0f0; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ccc; padding: 4px; }
+        .filter-container { margin-bottom: 10px; padding: 10px; background-color: #f0f0f0; }
+        table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+        th, td { border: 1px solid #ccc; padding: 4px; cursor: pointer; }
         th { background-color: #eee; }
+        .menu { margin-bottom: 20px; }
+        .menu button { margin-right: 10px; padding: 5px 10px; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
     <h2>WORK_ORDER_EM</h2>
-    <div class="filter-container">
-        <label>Room: <input type="text" id="filter-room"></label>
-        <label>Order: <input type="text" id="filter-order"></label>
-        <label>MAT: <input type="text" id="filter-mat"></label>
-        <label>Section: <input type="text" id="filter-section"></label>
-        <label>CPH: <input type="text" id="filter-cph"></label>
-        <label>Status: <input type="text" id="filter-status"></label>
-        <br><br>
-        <input type="file" id="upload" accept=".xlsx" />
+
+    <div class="menu">
+        <button onclick="showTab('work-order')">Work Order</button>
+        <button onclick="showTab('detail-part')">Detail Part</button>
     </div>
-    <table id="wo-table"></table>
+
+    <!-- Work Order Tab -->
+    <div id="work-order">
+        <div class="filter-container">
+            <label>Room: <input type="text" id="filter-room"></label>
+            <label>Order: <input type="text" id="filter-order"></label>
+            <label>MAT: <input type="text" id="filter-mat"></label>
+            <label>Section: <input type="text" id="filter-section"></label>
+            <label>CPH: <input type="text" id="filter-cph"></label>
+            <label>Status: <input type="text" id="filter-status"></label>
+            <br><br>
+            <input type="file" id="upload" accept=".xlsx" />
+        </div>
+        <table id="wo-table"><thead></thead><tbody></tbody></table>
+    </div>
+
+    <!-- Detail Part Tab -->
+    <div id="detail-part" class="hidden">
+        <div class="filter-container">
+            <label>Order: <input type="text" id="filter-detail-order"></label>
+            <input type="file" id="upload-detail" accept=".xlsx" />
+        </div>
+        <table id="detail-table"><thead></thead><tbody></tbody></table>
+    </div>
 
     <script>
-        function formatDate(excelDate) {
-            if (!excelDate) return "";
-            const date = new Date(Math.round((excelDate - 25569) * 86400 * 1000));
-            const options = { day: '2-digit', month: 'short', year: 'numeric' };
-            return date.toLocaleDateString('en-US', options).replace(/ /g, '-');
+        let woData = [];
+        let detailData = [];
+
+        function showTab(tabId) {
+            document.getElementById('work-order').classList.add('hidden');
+            document.getElementById('detail-part').classList.add('hidden');
+            document.getElementById(tabId).classList.remove('hidden');
         }
 
-        function formatCurrency(value) {
-            if (!value) return "";
-            return "$" + parseInt(value).toLocaleString();
+        function renderTable(data, tableId) {
+            const table = document.getElementById(tableId);
+            const thead = table.querySelector("thead");
+            const tbody = table.querySelector("tbody");
+
+            if (data.length === 0) return;
+
+            const header = data[0];
+            const rows = data.slice(1);
+
+            thead.innerHTML = "<tr>" + header.map(h => `<th onclick="sortTable(this, '${tableId}')">${h}</th>`).join("") + "</tr>";
+            tbody.innerHTML = "";
+
+            rows.forEach(row => {
+                const tr = document.createElement("tr");
+                header.forEach((col, i) => {
+                    let val = row[i] || "";
+                    tr.innerHTML += `<td>${val}</td>`;
+                });
+                tbody.appendChild(tr);
+            });
         }
-        function sortTable(header) {
-            const table = header.closest("table");
+
+        function sortTable(header, tableId) {
+            const table = document.getElementById(tableId);
             const ths = Array.from(table.querySelectorAll("th"));
             const index = ths.indexOf(header);
-            const rows = Array.from(table.querySelector("tbody").rows);
+            const tbody = table.querySelector("tbody");
+            const rows = Array.from(tbody.rows);
             const asc = !header.asc;
             header.asc = asc;
 
@@ -52,68 +95,63 @@
                 return asc ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
             });
 
-            rows.forEach(row => table.querySelector("tbody").appendChild(row));
+            rows.forEach(row => tbody.appendChild(row));
         }
 
-        function applyStyle(col, val) {
-            let style = "";
-            let align = "left";
-            if (["Order", "Created On", "Planning", "Target Date", "End Date", "Cost", "Include", "Exclude"].includes(col)) {
-                align = "right";
-            } else if (["User Status", "MAT"].includes(col)) {
-                align = "center";
-            }
-
-            if (col === "Status Part") {
-                if (val === "Complete") style = "background-color:green;color:white";
-                else if (val === "Not Complete") style = "background-color:red;color:white";
-            } else if (col === "Aging") {
-                const aging = parseInt(val);
-                if (!isNaN(aging)) {
-                    if (aging <= 30) style = "background-color:green;color:white";
-                    else style = "background-color:red;color:white";
-                }
-            } else if (col === "Status AMT") {
-                if (val === "") style = "background-color:white;color:black";
-                else if (val === "O") style = "background-color:lightgray;color:black";
-                else if (val === "YTS") style = "background-color:green;color:white";
-                else if (val === "IP") style = "background-color:orange;color:red";
-                else if (val === "C") style = "background-color:black;color:white";
-            }
-
-            return `style="text-align:${align};${style}"`;
+        function filterTable(data, filters) {
+            return data.filter((row, i) => {
+                if (i === 0) return true; // header
+                return filters.every(([index, value]) => {
+                    return row[index]?.toString().toLowerCase().includes(value.toLowerCase());
+                });
+            });
         }
 
         document.getElementById('upload').addEventListener('change', function(e) {
             const reader = new FileReader();
             reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const sheetName = workbook.SheetNames[0];
-                const sheet = workbook.Sheets[sheetName];
-                const json = XLSX.utils.sheet_to_json(sheet, {header:1});
-                const header = json[0];
-                const rows = json.slice(1);
-
-                let table = "<tr>" + header.map(h => `<th>${h}</th>`).join("") + "</tr>";
-                rows.forEach(row => {
-                    table += "<tr>";
-                    header.forEach((col, i) => {
-                        let val = row[i] || "";
-                        if (["Created On", "Planning", "Target Date", "End Date"].includes(col)) {
-                            val = formatDate(val);
-                        } else if (["Cost", "Include", "Exclude"].includes(col)) {
-                            val = formatCurrency(val);
-                        }
-                        const style = applyStyle(col, val);
-                        table += `<td ${style}>${val}</td>`;
-                    });
-                    table += "</tr>";
-                });
-
-                document.getElementById("wo-table").innerHTML = table;
+                const workbook = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                woData = XLSX.utils.sheet_to_json(sheet, {header:1});
+                renderTable(woData, "wo-table");
             };
             reader.readAsArrayBuffer(e.target.files[0]);
+        });
+
+        document.querySelectorAll('#filter-room, #filter-order, #filter-mat, #filter-section, #filter-cph, #filter-status')
+            .forEach(input => input.addEventListener('input', () => {
+                const header = woData[0];
+                const filters = [
+                    [header.indexOf("Room"), document.getElementById("filter-room").value],
+                    [header.indexOf("Order"), document.getElementById("filter-order").value],
+                    [header.indexOf("MAT"), document.getElementById("filter-mat").value],
+                    [header.indexOf("Section"), document.getElementById("filter-section").value],
+                    [header.indexOf("CPH"), document.getElementById("filter-cph").value],
+                    [header.indexOf("Status"), document.getElementById("filter-status").value],
+                ].filter(([i, v]) => i >= 0 && v);
+                const filtered = filterTable(woData, filters);
+                renderTable(filtered, "wo-table");
+            }));
+
+        document.getElementById('upload-detail').addEventListener('change', function(e) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const workbook = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                detailData = XLSX.utils.sheet_to_json(sheet, {header:1});
+                renderTable(detailData, "detail-table");
+            };
+            reader.readAsArrayBuffer(e.target.files[0]);
+        });
+
+        document.getElementById('filter-detail-order').addEventListener('input', () => {
+            const header = detailData[0];
+            const index = header.indexOf("Order Number");
+            const value = document.getElementById("filter-detail-order").value;
+            if (index >= 0) {
+                const filtered = filterTable(detailData, [[index, value]]);
+                renderTable(filtered, "detail-table");
+            }
         });
     </script>
 </body>
