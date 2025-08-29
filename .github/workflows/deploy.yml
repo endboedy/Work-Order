@@ -1,9 +1,9 @@
-name: Deploy
+name: Deploy ke Pages
 
 on:
   push:
     branches:
-      - main  # ganti kalau branch utama kamu beda
+      - main
 
 jobs:
   deploy:
