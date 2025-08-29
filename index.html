@@ -2,52 +2,72 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
     <title>WORK_ORDER_EM</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; font-size: 11px; }
-        .filter-container {
-            background-color: #f0f0f0;
-            padding: 10px;
-            margin-bottom: 15px;
-        }
-        .filter-container label {
-            margin-right: 10px;
-        }
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            font-size: 11px;
-        }
-        th, td {
-            border: 1px solid #ccc;
-            padding: 3px 5px;
-            text-align: left;
-        }
-        th {
-            background-color: #e0e0e0;
-        }
+        body { font-family: Arial; font-size: 11px; }
+        .filter-container { margin-bottom: 20px; padding: 10px; background-color: #f0f0f0; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ccc; padding: 4px; }
+        th { background-color: #eee; }
     </style>
 </head>
 <body>
     <h2>WORK_ORDER_EM</h2>
     <div class="filter-container">
-        <label>Room: <input type="text" id="filterRoom"></label>
-        <label>Order: <input type="text" id="filterOrder"></label>
-        <label>MAT: <input type="text" id="filterMAT"></label>
-        <label>Section: <input type="text" id="filterSection"></label>
-        <label>CPH: <input type="text" id="filterCPH"></label>
-        <label>Status: <input type="text" id="filterStatus"></label>
+        <label>Room: <input type="text" id="filter-room"></label>
+        <label>Order: <input type="text" id="filter-order"></label>
+        <label>MAT: <input type="text" id="filter-mat"></label>
+        <label>Section: <input type="text" id="filter-section"></label>
+        <label>CPH: <input type="text" id="filter-cph"></label>
+        <label>Status: <input type="text" id="filter-status"></label>
+        <br><br>
+        <input type="file" id="upload" accept=".xlsx" />
     </div>
-    <input type="file" id="upload" accept=".xlsx" />
-    <br><br>
-    <table id="dataTable">
-        <thead></thead>
-        <tbody></tbody>
-    </table>
+    <table id="wo-table"></table>
 
     <script>
+        function formatDate(excelDate) {
+            if (!excelDate) return "";
+            const date = new Date(Math.round((excelDate - 25569) * 86400 * 1000));
+            const options = { day: '2-digit', month: 'short', year: 'numeric' };
+            return date.toLocaleDateString('en-US', options).replace(/ /g, '-');
+        }
+
+        function formatCurrency(value) {
+            if (!value) return "";
+            return "$" + parseInt(value).toLocaleString();
+        }
+
+        function applyStyle(col, val) {
+            let style = "";
+            let align = "left";
+            if (["Order", "Created On", "Planning", "Target Date", "End Date", "Cost", "Include", "Exclude"].includes(col)) {
+                align = "right";
+            } else if (["User Status", "MAT"].includes(col)) {
+                align = "center";
+            }
+
+            if (col === "Status Part") {
+                if (val === "Complete") style = "background-color:green;color:white";
+                else if (val === "Not Complete") style = "background-color:red;color:white";
+            } else if (col === "Aging") {
+                const aging = parseInt(val);
+                if (!isNaN(aging)) {
+                    if (aging <= 30) style = "background-color:green;color:white";
+                    else style = "background-color:red;color:white";
+                }
+            } else if (col === "Status AMT") {
+                if (val === "") style = "background-color:white;color:black";
+                else if (val === "O") style = "background-color:lightgray;color:black";
+                else if (val === "YTS") style = "background-color:green;color:white";
+                else if (val === "IP") style = "background-color:orange;color:red";
+                else if (val === "C") style = "background-color:black;color:white";
+            }
+
+            return `style="text-align:${align};${style}"`;
+        }
+
         document.getElementById('upload').addEventListener('change', function(e) {
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -55,48 +75,27 @@
                 const workbook = XLSX.read(data, {type: 'array'});
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
-                const jsonData = XLSX.utils.sheet_to_json(sheet, {header:1});
-                const headers = jsonData[0];
-                const rows = jsonData.slice(1);
+                const json = XLSX.utils.sheet_to_json(sheet, {header:1});
+                const header = json[0];
+                const rows = json.slice(1);
 
-                const thead = document.querySelector('#dataTable thead');
-                const tbody = document.querySelector('#dataTable tbody');
-                thead.innerHTML = '';
-                tbody.innerHTML = '';
-
-                const headerRow = document.createElement('tr');
-                headers.forEach(header => {
-                    const th = document.createElement('th');
-                    th.textContent = header;
-                    headerRow.appendChild(th);
-                });
-                thead.appendChild(headerRow);
-
+                let table = "<tr>" + header.map(h => `<th>${h}</th>`).join("") + "</tr>";
                 rows.forEach(row => {
-                    const tr = document.createElement('tr');
-                    row.forEach((cell, index) => {
-                        const td = document.createElement('td');
-                        const header = headers[index];
-
-                        if (header === 'Created On') {
-                            const date = XLSX.SSF.parse_date_code(cell);
-                            if (date) {
-                                const d = new Date(date.y, date.m - 1, date.d);
-                                const options = { day: 'numeric', month: 'short', year: 'numeric' };
-                                td.textContent = d.toLocaleDateString('en-US', options).replace(',', '');
-                            } else {
-                                td.textContent = cell;
-                            }
-                        } else if (['Cost', 'Include', 'Exclude'].includes(header)) {
-                            const num = parseFloat(cell);
-                            td.textContent = isNaN(num) ? cell : `$${num.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
-                        } else {
-                            td.textContent = cell;
+                    table += "<tr>";
+                    header.forEach((col, i) => {
+                        let val = row[i] || "";
+                        if (["Created On", "Planning", "Target Date", "End Date"].includes(col)) {
+                            val = formatDate(val);
+                        } else if (["Cost", "Include", "Exclude"].includes(col)) {
+                            val = formatCurrency(val);
                         }
-                        tr.appendChild(td);
+                        const style = applyStyle(col, val);
+                        table += `<td ${style}>${val}</td>`;
                     });
-                    tbody.appendChild(tr);
+                    table += "</tr>";
                 });
+
+                document.getElementById("wo-table").innerHTML = table;
             };
             reader.readAsArrayBuffer(e.target.files[0]);
         });
