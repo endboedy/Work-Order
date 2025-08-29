@@ -47,7 +47,9 @@
     </div>
 
     <!-- XLSX Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full<!-- Main Script -->
+    <script src="https://cdnjs.cloudflare.com/ajax18.5/xlsx.full.min.js
+
+    <!-- Main Script -->
     <script>
         let woData = [];
         let detailData = [];
@@ -63,7 +65,7 @@
             const thead = table.querySelector("thead");
             const tbody = table.querySelector("tbody");
 
-            if (data.length === 0) return;
+            if (!data || data.length === 0) return;
 
             const header = data[0];
             const rows = data.slice(1);
@@ -101,7 +103,7 @@
 
         function filterTable(data, filters) {
             return data.filter((row, i) => {
-                if (i === 0) return true; // header
+                if (i === 0) return true;
                 return filters.every(([index, value]) => {
                     return row[index]?.toString().toLowerCase().includes(value.toLowerCase());
                 });
@@ -121,6 +123,7 @@
 
         document.querySelectorAll('#filter-room, #filter-order, #filter-mat, #filter-section, #filter-cph, #filter-status')
             .forEach(input => input.addEventListener('input', () => {
+                if (!woData.length) return;
                 const header = woData[0];
                 const filters = [
                     [header.indexOf("Room"), document.getElementById("filter-room").value],
@@ -146,6 +149,7 @@
         });
 
         document.getElementById('filter-detail-order').addEventListener('input', () => {
+            if (!detailData.length) return;
             const header = detailData[0];
             const index = header.indexOf("Order Number");
             const value = document.getElementById("filter-detail-order").value;
