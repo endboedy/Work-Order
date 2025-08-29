@@ -3,172 +3,155 @@
 <html>
 <head>
     <title>WORK_ORDER_EM</title>
-    <link rel="icon" href="data:,">
+    <script src="https://cdnjs.cloudflare.com/ajax18.5/xlsx.full.min.js
     <style>
         body { font-family: Arial; font-size: 11px; }
-        .filter-container { margin-bottom: 10px; padding: 10px; background-color: #f0f0f0; }
-        table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+        .filter-container { margin-bottom: 20px; padding: 10px; background-color: #f0f0f0; }
+        table { border-collapse: collapse; width: 100%; }
         th, td { border: 1px solid #ccc; padding: 4px; cursor: pointer; }
         th { background-color: #eee; }
-        .menu { margin-bottom: 20px; }
-        .menu button { margin-right: 10px; padding: 5px 10px; }
-        .hidden { display: none; }
-        .status { margin: 10px 0; color: green; font-weight: bold; }
-        .error { color: red; }
     </style>
-    https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
 </head>
 <body>
     <h2>WORK_ORDER_EM</h2>
-
-    <div class="menu">
-        <button onclick="showTab('work-order')">Work Order</button>
-        <button onclick="showTab('detail-part')">Detail Part</button>
+    <div class="filter-container">
+        <label>Room: <input type="text" id="filter-room"></label>
+        <label>Order: <input type="text" id="filter-order"></label>
+        <label>MAT: <input type="text" id="filter-mat"></label>
+        <label>Section: <input type="text" id="filter-section"></label>
+        <label>CPH: <input type="text" id="filter-cph"></label>
+        <label>Status: <input type="text" id="filter-status"></label>
+        <br><br>
+        <input type="file" id="upload" accept=".xlsx" />
     </div>
-
-    <div id="status" class="status"></div>
-
-    <!-- Work Order Tab -->
-    <div id="work-order">
-        <div class="filter-container">
-            <label>Room: <input type="text" id="filter-room"></label>
-            <label>Order: <input type="text" id="filter-order"></label>
-            <label>MAT: <input type="text" id="filter-mat"></label>
-            <label>Section: <input type="text" id="filter-section"></label>
-            <label>CPH: <input type="text" id="filter-cph"></label>
-            <label>Status: <input type="text" id="filter-status"></label>
-            <br><br>
-            <input type="file" id="upload" accept=".xlsx" />
-        </div>
-        <table id="wo-table"><thead></thead><tbody></tbody></table>
-    </div>
-
-    <!-- Detail Part Tab -->
-    <div id="detail-part" class="hidden">
-        <div class="filter-container">
-            <label>Order: <input type="text" id="filter-detail-order"></label>
-            <input type="file" id="upload-detail" accept=".xlsx" />
-        </div>
-        <table id="detail-table"><thead></thead><tbody></tbody></table>
-    </div>
+    <table id="wo-table">
+        <thead></thead>
+        <tbody></tbody>
+    </table>
 
     <script>
-        function showTab(tabId) {
-            document.getElementById('work-order').classList.add('hidden');
-            document.getElementById('detail-part').classList.add('hidden');
-            document.getElementById(tabId).classList.remove('hidden');
-            document.getElementById('status').innerText = "";
+        let originalData = [];
+        let headers = [];
+
+        function formatDate(excelDate) {
+            if (!excelDate) return "";
+            const date = new Date(Math.round((excelDate - 25569) * 86400 * 1000));
+            const options = { day: '2-digit', month: 'short', year: 'numeric' };
+            return date.toLocaleDateString('en-US', options).replace(/ /g, '-');
         }
 
-        let woData = [];
-        let detailData = [];
+        function formatCurrency(value) {
+            if (!value) return "";
+            return "$" + parseInt(value).toLocaleString();
+        }
 
-        function renderTable(data, tableId) {
-            const table = document.getElementById(tableId);
-            const thead = table.querySelector("thead");
-            const tbody = table.querySelector("tbody");
+        function applyStyle(col, val) {
+            let style = "";
+            let align = "left";
+            if (["Order", "Created On", "Planning", "Target Date", "End Date", "Cost", "Include", "Exclude"].includes(col)) {
+                align = "right";
+            } else if (["User Status", "MAT"].includes(col)) {
+                align = "center";
+            }
 
-            if (!data || data.length === 0) return;
+            if (col === "Status Part") {
+                if (val === "Complete") style = "background-color:green;color:white";
+                else if (val === "Not Complete") style = "background-color:red;color:white";
+            } else if (col === "Aging") {
+                const aging = parseInt(val);
+                if (!isNaN(aging)) {
+                    if (aging <= 30) style = "background-color:green;color:white";
+                    else style = "background-color:red;color:white";
+                }
+            } else if (col === "Status AMT") {
+                if (val === "") style = "background-color:white;color:black";
+                else if (val === "O") style = "background-color:lightgray;color:black";
+                else if (val === "YTS") style = "background-color:green;color:white";
+                else if (val === "IP") style = "background-color:orange;color:red";
+                else if (val === "C") style = "background-color:black;color:white";
+            }
 
-            const header = data[0];
-            const rows = data.slice(1);
+            return `style="text-align:${align};${style}"`;
+        }
 
-            thead.innerHTML = "<tr>" + header.map(h => `<th onclick="sortTable(this, '${tableId}')">${h}</th>`).join("") + "</tr>";
+        function renderTable(data) {
+            const thead = document.querySelector("#wo-table thead");
+            const tbody = document.querySelector("#wo-table tbody");
+
+            thead.innerHTML = "<tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr>";
             tbody.innerHTML = "";
 
-            rows.forEach(row => {
+            data.forEach(row => {
                 const tr = document.createElement("tr");
-                header.forEach((col, i) => {
+                headers.forEach((col, i) => {
                     let val = row[i] || "";
-                    tr.innerHTML += `<td>${val}</td>`;
+                    if (["Created On", "Planning", "Target Date", "End Date"].includes(col)) {
+                        val = formatDate(val);
+                    } else if (["Cost", "Include", "Exclude"].includes(col)) {
+                        val = formatCurrency(val);
+                    }
+                    const td = document.createElement("td");
+                    td.innerHTML = val;
+                    td.setAttribute("style", applyStyle(col, val).replace('style="', '').replace('"', ''));
+                    tr.appendChild(td);
                 });
                 tbody.appendChild(tr);
             });
         }
 
-        function sortTable(header, tableId) {
-            const table = document.getElementById(tableId);
-            const ths = Array.from(table.querySelectorAll("th"));
-            const index = ths.indexOf(header);
-            const tbody = table.querySelector("tbody");
-            const rows = Array.from(tbody.rows);
-            const asc = !header.asc;
-            header.asc = asc;
+        function filterData() {
+            const room = document.getElementById("filter-room").value.toLowerCase();
+            const order = document.getElementById("filter-order").value.toLowerCase();
+            const mat = document.getElementById("filter-mat").value.toLowerCase();
+            const section = document.getElementById("filter-section").value.toLowerCase();
+            const cph = document.getElementById("filter-cph").value.toLowerCase();
+            const status = document.getElementById("filter-status").value.toLowerCase();
 
-            rows.sort((a, b) => {
-                const cellA = a.cells[index].innerText;
-                const cellB = b.cells[index].innerText;
-                return asc ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+            const filtered = originalData.filter(row => {
+                const rowObj = Object.fromEntries(headers.map((h, i) => [h, row[i] ? row[i].toString().toLowerCase() : ""]));
+                return (
+                    rowObj["Room"].includes(room) &&
+                    rowObj["Order"].includes(order) &&
+                    rowObj["MAT"].includes(mat) &&
+                    rowObj["Section"].includes(section) &&
+                    rowObj["CPH"].includes(cph) &&
+                    rowObj["User Status"].includes(status)
+                );
             });
 
-            rows.forEach(row => tbody.appendChild(row));
+            renderTable(filtered);
         }
 
-        function filterTable(data, filters) {
-            return data.filter((row, i) => {
-                if (i === 0) return true;
-                return filters.every(([index, value]) => {
-                    return row[index]?.toString().toLowerCase().includes(value.toLowerCase());
+        document.querySelectorAll(".filter-container input").forEach(input => {
+            input.addEventListener("input", filterData);
+        });
+
+        document.getElementById('upload').addEventListener('change', function(e) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                const json = XLSX.utils.sheet_to_json(sheet, {header:1});
+                headers = json[0];
+                originalData = json.slice(1);
+                renderTable(originalData);
+            };
+            reader.readAsArrayBuffer(e.target.files[0]);
+        });
+
+        document.querySelector("#wo-table thead").addEventListener("click", function(e) {
+            if (e.target.tagName === "TH") {
+                const index = Array.from(e.target.parentNode.children).indexOf(e.target);
+                const asc = !e.target.asc;
+                e.target.asc = asc;
+                originalData.sort((a, b) => {
+                    const valA = a[index] ? a[index].toString() : "";
+                    const valB = b[index] ? b[index].toString() : "";
+                    return asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
                 });
-            });
-        }
-
-        function handleUpload(inputId, targetData, tableId, successMsg) {
-            const input = document.getElementById(inputId);
-            input.addEventListener('change', function(e) {
-                const status = document.getElementById("status");
-                if (typeof XLSX === 'undefined') {
-                    status.innerHTML = `<span class="error">Gagal memuat library XLSX. Cek koneksi internet.</span>`;
-                    return;
-                }
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    try {
-                        const workbook = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
-                        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                        const data = XLSX.utils.sheet_to_json(sheet, {header:1});
-                        if (inputId === 'upload') {
-                            woData = data;
-                        } else {
-                            detailData = data;
-                        }
-                        renderTable(data, tableId);
-                        status.innerText = successMsg;
-                    } catch (err) {
-                        status.innerHTML = `<span class="error">Gagal membaca file Excel: ${err.message}</span>`;
-                    }
-                };
-                reader.readAsArrayBuffer(e.target.files[0]);
-            });
-        }
-
-        handleUpload('upload', woData, 'wo-table', 'Upload file Work Order berhasil!');
-        handleUpload('upload-detail', detailData, 'detail-table', 'Upload file Detail Part berhasil!');
-
-        document.querySelectorAll('#filter-room, #filter-order, #filter-mat, #filter-section, #filter-cph, #filter-status')
-            .forEach(input => input.addEventListener('input', () => {
-                if (!woData.length) return;
-                const header = woData[0];
-                const filters = [
-                    [header.indexOf("Room"), document.getElementById("filter-room").value],
-                    [header.indexOf("Order"), document.getElementById("filter-order").value],
-                    [header.indexOf("MAT"), document.getElementById("filter-mat").value],
-                    [header.indexOf("Section"), document.getElementById("filter-section").value],
-                    [header.indexOf("CPH"), document.getElementById("filter-cph").value],
-                    [header.indexOf("Status"), document.getElementById("filter-status").value],
-                ].filter(([i, v]) => i >= 0 && v);
-                const filtered = filterTable(woData, filters);
-                renderTable(filtered, "wo-table");
-            }));
-
-        document.getElementById('filter-detail-order').addEventListener('input', () => {
-            if (!detailData.length) return;
-            const header = detailData[0];
-            const index = header.indexOf("Order Number");
-            const value = document.getElementById("filter-detail-order").value;
-            if (index >= 0) {
-                const filtered = filterTable(detailData, [[index, value]]);
-                renderTable(filtered, "detail-table");
+                renderTable(originalData);
             }
         });
     </script>
