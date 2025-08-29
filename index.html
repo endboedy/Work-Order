@@ -3,7 +3,7 @@
 <html>
 <head>
     <title>WORK_ORDER_EM</title>
-    <link rel="icon" href="data:,"> <!-- Hindari error favicon -->
+    <link rel="icon" href="data:,">
     <style>
         body { font-family: Arial; font-size: 11px; }
         .filter-container { margin-bottom: 10px; padding: 10px; background-color: #f0f0f0; }
@@ -13,7 +13,10 @@
         .menu { margin-bottom: 20px; }
         .menu button { margin-right: 10px; padding: 5px 10px; }
         .hidden { display: none; }
+        .status { margin: 10px 0; color: green; font-weight: bold; }
+        .error { color: red; }
     </style>
+    https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
 </head>
 <body>
     <h2>WORK_ORDER_EM</h2>
@@ -22,6 +25,8 @@
         <button onclick="showTab('work-order')">Work Order</button>
         <button onclick="showTab('detail-part')">Detail Part</button>
     </div>
+
+    <div id="status" class="status"></div>
 
     <!-- Work Order Tab -->
     <div id="work-order">
@@ -47,15 +52,12 @@
         <table id="detail-table"><thead></thead><tbody></tbody></table>
     </div>
 
-    <!-- XLSX Library -->
-    https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
-
-    <!-- Main Script -->
     <script>
         function showTab(tabId) {
             document.getElementById('work-order').classList.add('hidden');
             document.getElementById('detail-part').classList.add('hidden');
             document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById('status').innerText = "";
         }
 
         let woData = [];
@@ -111,25 +113,37 @@
             });
         }
 
-        document.getElementById('upload').addEventListener('change', function(e) {
-            if (typeof XLSX === 'undefined') {
-                alert("Gagal memuat library XLSX. Cek koneksi internet.");
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const workbook = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
-                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                    woData = XLSX.utils.sheet_to_json(sheet, {header:1});
-                    renderTable(woData, "wo-table");
-                    alert("Upload file Work Order berhasil!");
-                } catch (err) {
-                    alert("Gagal membaca file Excel: " + err.message);
+        function handleUpload(inputId, targetData, tableId, successMsg) {
+            const input = document.getElementById(inputId);
+            input.addEventListener('change', function(e) {
+                const status = document.getElementById("status");
+                if (typeof XLSX === 'undefined') {
+                    status.innerHTML = `<span class="error">Gagal memuat library XLSX. Cek koneksi internet.</span>`;
+                    return;
                 }
-            };
-            reader.readAsArrayBuffer(e.target.files[0]);
-        });
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const workbook = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
+                        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const data = XLSX.utils.sheet_to_json(sheet, {header:1});
+                        if (inputId === 'upload') {
+                            woData = data;
+                        } else {
+                            detailData = data;
+                        }
+                        renderTable(data, tableId);
+                        status.innerText = successMsg;
+                    } catch (err) {
+                        status.innerHTML = `<span class="error">Gagal membaca file Excel: ${err.message}</span>`;
+                    }
+                };
+                reader.readAsArrayBuffer(e.target.files[0]);
+            });
+        }
+
+        handleUpload('upload', woData, 'wo-table', 'Upload file Work Order berhasil!');
+        handleUpload('upload-detail', detailData, 'detail-table', 'Upload file Detail Part berhasil!');
 
         document.querySelectorAll('#filter-room, #filter-order, #filter-mat, #filter-section, #filter-cph, #filter-status')
             .forEach(input => input.addEventListener('input', () => {
@@ -146,26 +160,6 @@
                 const filtered = filterTable(woData, filters);
                 renderTable(filtered, "wo-table");
             }));
-
-        document.getElementById('upload-detail').addEventListener('change', function(e) {
-            if (typeof XLSX === 'undefined') {
-                alert("Gagal memuat library XLSX. Cek koneksi internet.");
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const workbook = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
-                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                    detailData = XLSX.utils.sheet_to_json(sheet, {header:1});
-                    renderTable(detailData, "detail-table");
-                    alert("Upload file Detail Part berhasil!");
-                } catch (err) {
-                    alert("Gagal membaca file Excel: " + err.message);
-                }
-            };
-            reader.readAsArrayBuffer(e.target.files[0]);
-        });
 
         document.getElementById('filter-detail-order').addEventListener('input', () => {
             if (!detailData.length) return;
