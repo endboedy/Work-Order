@@ -100,6 +100,7 @@
     <p>Aplikasi monitoring berbasis GitHub Pages</p>
   </div>
 
+  <!-- === SCRIPT di bawah sini === -->
   <script>
     /* === Fungsi Tab === */
     function openTab(n) {
@@ -113,7 +114,7 @@
       const status = document.getElementById(status-${targetName});
       const progress = document.getElementById(progress-${targetName});
 
-      if (!input.files.length) {
+      if (!input || !input.files.length) {
         status.textContent = "⚠ Pilih file dulu!";
         return;
       }
@@ -180,9 +181,8 @@
     }
 
     /* === Hitung Plan vs Actual (dummy perhitungan) === */
-    async function hitung() {
+    function hitung() {
       const hasil = document.getElementById("hasilHitung");
-      // ⚠ nanti bisa diubah ke fetch file Excel & parsing
       const totalPlan = 20000;
       const totalActual = 15000;
       const rumus = (totalPlan - totalActual) / 16500;
