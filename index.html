@@ -1,93 +1,102 @@
 
 <!DOCTYPE html>
-
 <html>
 <head>
-<title>WORK_ORDER_EM</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        h2 { color: #2c3e50; }
-        input[type="file"] { margin-bottom: 20px; }
-        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        th { background-color: #f4f4f4; }
-        tr:nth-child(even) { background-color: #f9f9f9; }
+    <meta charset="UTF-8">
+    <title>WORK_ORDER_EM</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 11px; }
+        .filter-container {
+            background-color: #f0f0f0;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+        .filter-container label {
+            margin-right: 10px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 11px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 3px 5px;
+            text-align: left;
+        }
+        th {
+            background-color: #e0e0e0;
+        }
     </style>
-<style>
-#filter-container {
-    margin-bottom: 20px;
-    padding: 10px;
-    background-color: #f2f2f2;
-    border-radius: 8px;
-}
-#filter-container label {
-    margin-right: 10px;
-}
-#filter-container input {
-    margin-right: 20px;
-}
-#excel-table {
-    margin-top: 20px;
-    border-collapse: collapse;
-    width: 100%;
-}
-#excel-table th, #excel-table td {
-    border: 1px solid #ddd;
-    padding: 8px;
-}
-#excel-table th {
-    background-color: #4CAF50;
-    color: white;
-}
-</style></head>
+</head>
 <body>
-<h2>WORK_ORDER_EM</h2>
-<input accept=".xlsx" id="upload" type="file"/>
-<div id="table-container"></div>
-<script>
+    <h2>WORK_ORDER_EM</h2>
+    <div class="filter-container">
+        <label>Room: <input type="text" id="filterRoom"></label>
+        <label>Order: <input type="text" id="filterOrder"></label>
+        <label>MAT: <input type="text" id="filterMAT"></label>
+        <label>Section: <input type="text" id="filterSection"></label>
+        <label>CPH: <input type="text" id="filterCPH"></label>
+        <label>Status: <input type="text" id="filterStatus"></label>
+    </div>
+    <input type="file" id="upload" accept=".xlsx" />
+    <br><br>
+    <table id="dataTable">
+        <thead></thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
         document.getElementById('upload').addEventListener('change', function(e) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
+                const workbook = XLSX.read(data, {type: 'array'});
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
-                const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+                const jsonData = XLSX.utils.sheet_to_json(sheet, {header:1});
+                const headers = jsonData[0];
+                const rows = jsonData.slice(1);
 
-                if (jsonData.length === 0) {
-                    document.getElementById('table-container').innerHTML = "<p>No data found in the Excel sheet.</p>";
-                    return;
-                }
+                const thead = document.querySelector('#dataTable thead');
+                const tbody = document.querySelector('#dataTable tbody');
+                thead.innerHTML = '';
+                tbody.innerHTML = '';
 
-                const table = document.createElement('table');
-                const thead = document.createElement('thead');
-                const tbody = document.createElement('tbody');
-
-                // Create table header
                 const headerRow = document.createElement('tr');
-                Object.keys(jsonData[0]).forEach(col => {
+                headers.forEach(header => {
                     const th = document.createElement('th');
-                    th.textContent = col.trim();
+                    th.textContent = header;
                     headerRow.appendChild(th);
                 });
                 thead.appendChild(headerRow);
 
-                // Create table rows
-                jsonData.forEach(row => {
+                rows.forEach(row => {
                     const tr = document.createElement('tr');
-                    Object.keys(jsonData[0]).forEach(col => {
+                    row.forEach((cell, index) => {
                         const td = document.createElement('td');
-                        td.textContent = row[col] || "";
+                        const header = headers[index];
+
+                        if (header === 'Created On') {
+                            const date = XLSX.SSF.parse_date_code(cell);
+                            if (date) {
+                                const d = new Date(date.y, date.m - 1, date.d);
+                                const options = { day: 'numeric', month: 'short', year: 'numeric' };
+                                td.textContent = d.toLocaleDateString('en-US', options).replace(',', '');
+                            } else {
+                                td.textContent = cell;
+                            }
+                        } else if (['Cost', 'Include', 'Exclude'].includes(header)) {
+                            const num = parseFloat(cell);
+                            td.textContent = isNaN(num) ? cell : `$${num.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
+                        } else {
+                            td.textContent = cell;
+                        }
                         tr.appendChild(td);
                     });
                     tbody.appendChild(tr);
                 });
-
-                table.appendChild(thead);
-                table.appendChild(tbody);
-                document.getElementById('table-container').innerHTML = "";
-                document.getElementById('table-container').appendChild(table);
             };
             reader.readAsArrayBuffer(e.target.files[0]);
         });
