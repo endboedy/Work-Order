@@ -1,37 +1,21 @@
-
-body {
-    font-family: 'Aptos Narrow', sans-serif;
-    font-size: 11px;
-    background-color: #f0f0f0;
-    padding: 20px;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-}
-
-th, td {
-    border: 1px solid #ccc;
-    padding: 8px;
-    text-align: left;
-}
-
-input[type="text"], input[type="file"] {
-    margin: 5px;
-    padding: 5px;
-}
-
-button {
-    padding: 5px 10px;
-    background-color: #0077cc;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-button:hover {
-    background-color: #005fa3;
-}
+*{box-sizing:border-box}
+body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:0;background:#f6f8fb;color:#1a1a1a}
+header{background:#2e86de;color:white;padding:18px}
+header h1{margin:0}
+main{padding:18px}
+#upload-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:12px}
+.uploader{background:white;border:1px solid #ddd;padding:12px;border-radius:6px}
+.uploader h3{margin:0 0 8px 0;font-size:14px}
+.uploader input[type=file]{width:100%}
+#controls{margin-bottom:12px}
+#viewer{background:white;padding:12px;border-radius:6px;border:1px solid #ddd}
+#tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.tab{padding:6px 10px;border-radius:4px;background:#eee;cursor:pointer}
+.tab.active{background:#2e86de;color:white}
+.table-wrap{overflow:auto;max-height:420px;border-top:1px solid #eee;padding-top:8px}
+table{border-collapse:collapse;width:100%}
+th,td{border:1px solid #ddd;padding:6px;font-size:12px}
+th{background:#f0f0f0;position:sticky;top:0}
+footer{margin-top:12px;color:#666}
+.bad{background:#ffecec}
+.good{background:#eaffea}
