@@ -1,134 +1,118 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
   <title>Work_Order_EM</title>
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #e6f2ff; }
+    .header { background: #3399ff; color: white; padding: 15px; text-align: center; font-size: 20px; font-weight: bold; }
+    .tab { overflow: hidden; background: #f2b9a9; }
+    .tab button {
+      background: inherit; border: none; outline: none; cursor: pointer;
+      padding: 10px 20px; transition: 0.3s; font-weight: bold;
+    }
+    .tab button:hover { background: #ddd; }
+    .tab button.active { background: #ccc; }
+    .tabcontent {
+      display: none; padding: 20px; border-top: none; background: #d9ecff;
+    }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; background: white; }
+    th, td { border: 1px solid #999; padding: 6px; font-size: 12px; text-align: left; }
+    th { background: orange; }
+  </style>
 </head>
 <body>
-  <header class="app-header">
-    <h1>Work_Order_EM</h1>
-    <nav class="tabs">
-      <button class="tablink active" data-tab="menu1">Upload File</button>
-      <button class="tablink" data-tab="menu2">Monitoring Order</button>
-      <button class="tablink" data-tab="menu3">Detail Part & Component</button>
-      <button class="tablink" data-tab="menu4">External Job</button>
-    </nav>
-  </header>
 
-  <main>
-    <!-- ========== MENU 1 ========== -->
-    <section id="menu1" class="tabcontent" style="display:block">
-      <h2>Menu 1 — Upload File</h2>
-      <div class="card">
-        <div class="file-grid">
-          <label>IW39 <input type="file" id="f-iw39" accept=".xlsx,.xls" /></label>
-          <label>SUM57 <input type="file" id="f-sum57" accept=".xlsx,.xls" /></label>
-          <label>DET <input type="file" id="f-det" accept=".xlsx,.xls" /></label>
-          <label>External Job <input type="file" id="f-external" accept=".xlsx,.xls" /></label>
-          <label>Planning <input type="file" id="f-planning" accept=".xlsx,.xls" /></label>
-          <label>Equipt Adm <input type="file" id="f-equip" accept=".xlsx,.xls" /></label>
-          <label>Data1 <input type="file" id="f-data1" accept=".xlsx,.xls" /></label>
-          <label>Data2 <input type="file" id="f-data2" accept=".xlsx,.xls" /></label>
-        </div>
-        <div class="actions">
-          <button id="btn-clear">Clear All</button>
-        </div>
-        <div id="upload-status" class="status"></div>
-      </div>
+<div class="header">Work_Order_EM</div>
 
-      <div class="card">
-        <h3>Preview Terakhir Di-upload</h3>
-        <div id="preview-meta"></div>
-        <div id="preview-table" class="table-wrap"></div>
-      </div>
-    </section>
+<div class="tab">
+  <button class="tablinks" onclick="openTab(event, 'Menu1')">Menu 1</button>
+  <button class="tablinks" onclick="openTab(event, 'Menu2')">Menu 2</button>
+  <button class="tablinks" onclick="openTab(event, 'Menu3')">Menu 3</button>
+  <button class="tablinks" onclick="openTab(event, 'Menu4')">Menu 4</button>
+</div>
 
-    <!-- ========== MENU 2 ========== -->
-    <section id="menu2" class="tabcontent">
-      <h2>Menu 2 — Monitoring Order</h2>
-      <div class="card">
-        <div class="filter-form">
-          <div class="row">
-            <label>Room</label><input id="fl-room" />
-            <label>CPH</label><input id="fl-cph" />
-          </div>
-          <div class="row">
-            <label>Order</label><input id="fl-order" />
-            <label>Section</label><input id="fl-section" />
-          </div>
-          <div class="row">
-            <label>MAT</label><input id="fl-mat" />
-            <label>Status Part</label><input id="fl-statuspart" />
-          </div>
-          <div class="row">
-            <button id="btn-apply2">Apply Filter</button>
-            <button id="btn-reset2" class="ghost">Reset</button>
-          </div>
-        </div>
-      </div>
+<!-- Menu 1 -->
+<div id="Menu1" class="tabcontent">
+  <h3>Menu 1 - Upload File</h3>
+  <p>Pilih file sesuai data:</p>
+  <p>IW39 <input type="file"></p>
+  <p>SUM57 <input type="file"></p>
+  <p>DET <input type="file"></p>
+  <p>External Job <input type="file"></p>
+  <p>Planning <input type="file"></p>
+  <p>Equipt Adm <input type="file"></p>
+  <p>Data1 <input type="file"></p>
+  <p>Data2 <input type="file"></p>
+</div>
 
-      <div class="card">
-        <div id="table-menu2" class="table-wrap"></div>
-      </div>
-    </section>
+<!-- Menu 2 -->
+<div id="Menu2" class="tabcontent">
+  <h3>Menu 2 - Monitoring Order</h3>
+  <label>Room <input type="text"></label>
+  <label>Order <input type="text"></label>
+  <label>MAT <input type="text"></label>
+  <label>CPH <input type="text"></label>
+  <label>Section <input type="text"></label>
+  <label>Status Part <input type="text"></label>
+  <table>
+    <tr>
+      <th>Room</th><th>Order Type</th><th>Order</th><th>Description</th><th>Created On</th>
+      <th>User Status</th><th>MAT</th><th>CPH</th><th>Section</th><th>Status Part</th>
+      <th>Aging</th><th>Include</th><th>Exclude</th><th>Event Start</th>
+      <th>Status AMT</th><th>Target Date</th><th>End Date</th>
+    </tr>
+    <tr><td colspan="17">Data Monitoring Order</td></tr>
+  </table>
+</div>
 
-    <!-- ========== MENU 3 ========== -->
-    <section id="menu3" class="tabcontent">
-      <h2>Menu 3 — Detail Part & Component</h2>
-      <div class="card">
-        <div class="filter-form">
-          <div class="row">
-            <label>Order</label><input id="m3-order" />
-          </div>
-          <div class="row">
-            <label>Material Number</label><input id="m3-matno" />
-          </div>
-          <div class="row">
-            <label>Material Description</label><input id="m3-matdesc" />
-          </div>
-          <div class="row">
-            <button id="btn-apply3">Apply Filter</button>
-            <button id="btn-reset3" class="ghost">Reset</button>
-          </div>
-        </div>
-      </div>
+<!-- Menu 3 -->
+<div id="Menu3" class="tabcontent">
+  <h3>Menu 3 - Detail Part and Order</h3>
+  <label>Order <input type="text"></label>
+  <label>Material Number <input type="text"></label>
+  <label>Material Description <input type="text"></label>
+  <table>
+    <tr>
+      <th>Room</th><th>Order</th><th>Description</th><th>WO User Status</th>
+      <th>Material Number</th><th>Material Description</th>
+      <th>Requirement Quantity</th><th>Total Stock</th><th>Quantity Withdrawn</th>
+      <th>Outstanding Withdrawn Qty</th><th>Aging</th>
+    </tr>
+    <tr><td colspan="11">Data Detail Part</td></tr>
+  </table>
+</div>
 
-      <div class="card">
-        <div id="table-menu3" class="table-wrap"></div>
-      </div>
-    </section>
+<!-- Menu 4 -->
+<div id="Menu4" class="tabcontent">
+  <h3>Menu 4 - External Job</h3>
+  <label>Room <input type="text"></label>
+  <label>Order Number <input type="text"></label>
+  <label>Purchasing Document Number <input type="text"></label>
+  <table>
+    <tr>
+      <th>Room</th><th>Manufacturer Model</th><th>Order Number</th><th>Maintenance Activity Type</th>
+      <th>User Status</th><th>Description</th><th>Aging WO</th><th>Net Price (USD)</th>
+      <th>Cost Element</th><th>Service Number</th><th>Service Short Text</th><th>Name</th>
+      <th>Purchase Requisition Number</th><th>Purchasing Document Number</th><th>Entry Sheet Number</th>
+    </tr>
+    <tr><td colspan="15">Data External Job</td></tr>
+  </table>
+</div>
 
-    <!-- ========== MENU 4 ========== -->
-    <section id="menu4" class="tabcontent">
-      <h2>Menu 4 — External Job</h2>
-      <div class="card">
-        <div class="filter-form">
-          <div class="row">
-            <label>Room</label><input id="m4-room" />
-          </div>
-          <div class="row">
-            <label>Order Number</label><input id="m4-order" />
-          </div>
-          <div class="row">
-            <label>Purchasing Document Number</label><input id="m4-po" />
-          </div>
-          <div class="row">
-            <button id="btn-apply4">Apply Filter</button>
-            <button id="btn-reset4" class="ghost">Reset</button>
-          </div>
-        </div>
-      </div>
+<script>
+function openTab(evt, menuName) {
+  var i, tabcontent, tablinks;
+  tabcontent = document.getElementsByClassName("tabcontent");
+  for (i = 0; i < tabcontent.length; i++) { tabcontent[i].style.display = "none"; }
+  tablinks = document.getElementsByClassName("tablinks");
+  for (i = 0; i < tablinks.length; i++) { tablinks[i].className = tablinks[i].className.replace(" active", ""); }
+  document.getElementById(menuName).style.display = "block";
+  evt.currentTarget.className += " active";
+}
+// default buka menu1
+document.getElementsByClassName("tablinks")[0].click();
+</script>
 
-      <div class="card">
-        <div id="table-menu4" class="table-wrap"></div>
-      </div>
-    </section>
-  </main>
-
-  <!-- SheetJS for Excel parsing -->
-  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-  <script src="app.js"></script>
 </body>
 </html>
