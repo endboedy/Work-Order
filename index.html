@@ -1,127 +1,96 @@
 
 <!DOCTYPE html>
-<html lang="en">
+
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>WORK_ORDER_EM</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
+<title>WORK_ORDER_EM</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
         body { font-family: Arial, sans-serif; margin: 20px; }
-        h1 { text-align: center; }
-        .filters { margin-bottom: 20px; }
-        .filters label { margin-right: 10px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        h2 { color: #2c3e50; }
+        input[type="file"] { margin-bottom: 20px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
         th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
+        th { background-color: #f4f4f4; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
     </style>
-</head>
+<style>
+#filter-container {
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #f2f2f2;
+    border-radius: 8px;
+}
+#filter-container label {
+    margin-right: 10px;
+}
+#filter-container input {
+    margin-right: 20px;
+}
+#excel-table {
+    margin-top: 20px;
+    border-collapse: collapse;
+    width: 100%;
+}
+#excel-table th, #excel-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+#excel-table th {
+    background-color: #4CAF50;
+    color: white;
+}
+</style></head>
 <body>
-    <h1>WORK_ORDER_EM</h1>
-    <div class="filters">
-        <label>Room: <input type="text" id="filterRoom"></label>
-        <label>Order: <input type="text" id="filterOrder"></label>
-        <label>MAT: <input type="text" id="filterMAT"></label>
-        <label>Section: <input type="text" id="filterSection"></label>
-        <label>CPH: <input type="text" id="filterCPH"></label>
-        <label>Status: <input type="text" id="filterStatus"></label>
-        <button onclick="applyFilters()">Apply Filters</button>
-    </div>
-    <input type="file" id="uploadExcel" accept=".xlsx" />
-    <table id="dataTable">
-        <thead>
-            <tr>
-                <th>Room</th>
-                <th>Order Type</th>
-                <th>Order</th>
-                <th>Description</th>
-                <th>Created On</th>
-                <th>User Status</th>
-                <th>MAT</th>
-                <th>CPH</th>
-                <th>Section</th>
-                <th>Status Part</th>
-                <th>Aging</th>
-                <th>Month</th>
-                <th>Cost</th>
-                <th>Reman</th>
-                <th>Include</th>
-                <th>Exclude</th>
-                <th>Planning</th>
-                <th>Status AMT</th>
-                <th>Target Date</th>
-                <th>End Date</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-
-    <script>
-        let originalData = [];
-
-        document.getElementById('uploadExcel').addEventListener('change', function(e) {
+<h2>WORK_ORDER_EM</h2>
+<input accept=".xlsx" id="upload" type="file"/>
+<div id="table-container"></div>
+<script>
+        document.getElementById('upload').addEventListener('change', function(e) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
+                const workbook = XLSX.read(data, { type: 'array' });
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
-                const jsonData = XLSX.utils.sheet_to_json(sheet);
-                originalData = jsonData;
-                displayData(jsonData);
+                const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+                if (jsonData.length === 0) {
+                    document.getElementById('table-container').innerHTML = "<p>No data found in the Excel sheet.</p>";
+                    return;
+                }
+
+                const table = document.createElement('table');
+                const thead = document.createElement('thead');
+                const tbody = document.createElement('tbody');
+
+                // Create table header
+                const headerRow = document.createElement('tr');
+                Object.keys(jsonData[0]).forEach(col => {
+                    const th = document.createElement('th');
+                    th.textContent = col.trim();
+                    headerRow.appendChild(th);
+                });
+                thead.appendChild(headerRow);
+
+                // Create table rows
+                jsonData.forEach(row => {
+                    const tr = document.createElement('tr');
+                    Object.keys(jsonData[0]).forEach(col => {
+                        const td = document.createElement('td');
+                        td.textContent = row[col] || "";
+                        tr.appendChild(td);
+                    });
+                    tbody.appendChild(tr);
+                });
+
+                table.appendChild(thead);
+                table.appendChild(tbody);
+                document.getElementById('table-container').innerHTML = "";
+                document.getElementById('table-container').appendChild(table);
             };
             reader.readAsArrayBuffer(e.target.files[0]);
         });
-
-        function displayData(data) {
-            const tbody = document.querySelector('#dataTable tbody');
-            tbody.innerHTML = '';
-            data.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${row.Room || ''}</td>
-                    <td>${row['Order Type'] || ''}</td>
-                    <td>${row.Order || ''}</td>
-                    <td>${row.Description || ''}</td>
-                    <td>${row['Created On'] || ''}</td>
-                    <td>${row['User Status'] || ''}</td>
-                    <td>${row.MAT || ''}</td>
-                    <td>${row.CPH || ''}</td>
-                    <td>${row.Section || ''}</td>
-                    <td>${row['Status Part'] || ''}</td>
-                    <td>${row.Aging || ''}</td>
-                    <td>${row.Month || ''}</td>
-                    <td>${row.Cost || ''}</td>
-                    <td>${row.Reman || ''}</td>
-                    <td>${row.Include || ''}</td>
-                    <td>${row.Exclude || ''}</td>
-                    <td>${row.Planning || ''}</td>
-                    <td>${row['Status AMT'] || ''}</td>
-                    <td>${row['Target Date'] || ''}</td>
-                    <td>${row['End Date'] || ''}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function applyFilters() {
-            const room = document.getElementById('filterRoom').value.toLowerCase();
-            const order = document.getElementById('filterOrder').value.toLowerCase();
-            const mat = document.getElementById('filterMAT').value.toLowerCase();
-            const section = document.getElementById('filterSection').value.toLowerCase();
-            const cph = document.getElementById('filterCPH').value.toLowerCase();
-            const status = document.getElementById('filterStatus').value.toLowerCase();
-
-            const filtered = originalData.filter(row =>
-                (row.Room || '').toLowerCase().includes(room) &&
-                (row.Order || '').toLowerCase().includes(order) &&
-                (row.MAT || '').toLowerCase().includes(mat) &&
-                (row.Section || '').toLowerCase().includes(section) &&
-                (row.CPH || '').toLowerCase().includes(cph) &&
-                (row.Status || '').toLowerCase().includes(status)
-            );
-
-            displayData(filtered);
-        }
     </script>
 </body>
 </html>
