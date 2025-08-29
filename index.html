@@ -1,151 +1,326 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8" />
     <title>WORK_ORDER_EM</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { font-family: Arial; font-size: 11px; }
-        .filter-container { margin-bottom: 20px; padding: 10px; background-color: #f0f0f0; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ccc; padding: 4px; cursor: pointer; }
-        th { background-color: #eee; }
+        body { font-family: Arial; font-size: 12px; margin: 12px; }
+        .filter-container { margin-bottom: 12px; padding: 10px; background-color: #f7f7f7; border-radius: 6px; }
+        .filter-container label { margin-right: 8px; font-size: 13px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+        th, td { border: 1px solid #ccc; padding: 6px; }
+        th { background-color: #eee; cursor: pointer; user-select: none; }
+        th.sort-asc::after { content: " ▲"; font-size: 10px; color: #333; }
+        th.sort-desc::after { content: " ▼"; font-size: 10px; color: #333; }
     </style>
 </head>
 <body>
     <h2>WORK_ORDER_EM</h2>
     <div class="filter-container">
-        <label>Room: <input type="text" id="filter-room"></label>
-        <label>Order: <input type="text" id="filter-order"></label>
-        <label>MAT: <input type="text" id="filter-mat"></label>
-        <label>Section: <input type="text" id="filter-section"></label>
-        <label>CPH: <input type="text" id="filter-cph"></label>
-        <label>Status: <input type="text" id="filter-status"></label>
+        <label>Room: <input type="text" id="filter-room" placeholder="filter Room"></label>
+        <label>Order: <input type="text" id="filter-order" placeholder="filter Order"></label>
+        <label>MAT: <input type="text" id="filter-mat" placeholder="filter MAT"></label>
+        <label>Section: <input type="text" id="filter-section" placeholder="filter Section"></label>
+        <label>CPH: <input type="text" id="filter-cph" placeholder="filter CPH"></label>
+        <label>Status: <input type="text" id="filter-status" placeholder="filter Status"></label>
         <br><br>
         <input type="file" id="upload" accept=".xlsx" />
+        <button id="clear-filters" style="margin-left:12px;">Clear filters</button>
     </div>
+
     <table id="wo-table"></table>
 
     <script>
-        function formatDate(excelDate) {
-            if (!excelDate) return "";
-            const date = new Date(Math.round((excelDate - 25569) * 86400 * 1000));
+        // --- helper functions ---
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;");
+        }
+
+        function formatDateFromSerialOrDate(v) {
+            if (v === null || v === undefined || v === "") return "";
+            // If Date object
             const options = { day: '2-digit', month: 'short', year: 'numeric' };
-            return date.toLocaleDateString('en-US', options).replace(/ /g, '-');
+            if (v instanceof Date) {
+                return v.toLocaleDateString('en-US', options).replace(/ /g, '-');
+            }
+            // If excel serial number (number)
+            if (typeof v === 'number') {
+                const date = new Date(Math.round((v - 25569) * 86400 * 1000));
+                return date.toLocaleDateString('en-US', options).replace(/ /g, '-');
+            }
+            // If string parseable as date
+            const parsed = Date.parse(v);
+            if (!isNaN(parsed)) {
+                return new Date(parsed).toLocaleDateString('en-US', options).replace(/ /g, '-');
+            }
+            return String(v);
         }
 
         function formatCurrency(value) {
-            if (!value) return "";
-            return "$" + parseInt(value).toLocaleString();
+            if (value === null || value === undefined || value === "") return "";
+            // try to extract numbers
+            const num = Number(String(value).toString().replace(/[^0-9.-]/g, ''));
+            if (!isNaN(num)) {
+                return "$" + Math.round(num).toLocaleString();
+            }
+            return escapeHtml(String(value));
+        }
+
+        function applyStyle(col, val) {
+            col = (col || '').toString().trim();
+            val = (val === null || val === undefined) ? '' : String(val).trim();
+            let style = "";
+            let align = "left";
+
+            if (["Order", "Created On", "Planning", "Target Date", "End Date", "Cost", "Include", "Exclude"].some(x => x.toLowerCase() === col.toLowerCase())) {
+                align = "right";
+            } else if (["User Status", "MAT"].some(x => x.toLowerCase() === col.toLowerCase())) {
+                align = "center";
+            }
+
+            if (col.toLowerCase() === "status part") {
+                if (val === "Complete") style = "background-color:green;color:white;";
+                else if (val === "Not Complete") style = "background-color:red;color:white;";
+            } else if (col.toLowerCase() === "aging") {
+                const aging = parseInt(val);
+                if (!isNaN(aging)) {
+                    if (aging <= 30) style = "background-color:green;color:white;";
+                    else style = "background-color:red;color:white;";
+                }
+            } else if (col.toLowerCase() === "status amt") {
+                if (val === "") style = "background-color:white;color:black;";
+                else if (val === "O") style = "background-color:lightgray;color:black;";
+                else if (val === "YTS") style = "background-color:green;color:white;";
+                else if (val === "IP") style = "background-color:orange;color:red;";
+                else if (val === "C") style = "background-color:black;color:white;";
+            }
+
+            return 'style="text-align:' + align + ';' + style + '"';
+        }
+
+        // parse cell text into comparable value: numeric -> number, date -> timestamp, else lowercase string
+        function parseValueForSort(text) {
+            if (text === null || text === undefined) return '';
+            const s = String(text).trim();
+            if (s === '') return '';
+
+            // numeric?
+            const num = Number(s.replace(/[^0-9.\-]/g, ''));
+            if (!isNaN(num) && /[0-9]/.test(s)) {
+                return num;
+            }
+
+            // date-like? try parse
+            // replace '-' from dd-MMM-yyyy to spaces if needed
+            const parsed = Date.parse(s);
+            if (!isNaN(parsed)) {
+                return parsed; // timestamp number
+            }
+
+            return s.toLowerCase();
+        }
+
+        // --- sorting ---
+        function clearSortIndicators(thead) {
+            if (!thead) return;
+            thead.querySelectorAll('th').forEach(th => {
+                th.classList.remove('sort-asc', 'sort-desc');
+                delete th.dataset.sorted;
+            });
         }
 
         function sortTable(header) {
             const table = header.closest("table");
+            if (!table) return;
+            const tbody = table.querySelector("tbody");
+            if (!tbody) return;
+
             const ths = Array.from(table.querySelectorAll("th"));
             const index = ths.indexOf(header);
-            const rows = Array.from(table.querySelectorAll("tbody tr"));
-            const asc = !header.asc;
-            header.asc = asc;
+            if (index < 0) return;
 
+            // determine ascending/descending
+            const currentlyAsc = header.dataset.sorted === 'asc';
+            const asc = !currentlyAsc;
+            clearSortIndicators(table.querySelector('thead'));
+            header.dataset.sorted = asc ? 'asc' : 'desc';
+            header.classList.add(asc ? 'sort-asc' : 'sort-desc');
+
+            const rows = Array.from(tbody.rows);
             rows.sort((a, b) => {
-                const cellA = a.cells[index].innerText;
-                const cellB = b.cells[index].innerText;
-                return asc ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+                const va = parseValueForSort(a.cells[index]?.innerText || '');
+                const vb = parseValueForSort(b.cells[index]?.innerText || '');
+
+                // both numbers (including date timestamps)
+                if (typeof va === 'number' && typeof vb === 'number') {
+                    return asc ? (va - vb) : (vb - va);
+                }
+                // one number, one not -> numbers first
+                if (typeof va === 'number') return asc ? -1 : 1;
+                if (typeof vb === 'number') return asc ? 1 : -1;
+
+                // fallback to string compare
+                return asc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
             });
 
-            rows.forEach(row => table.querySelector("tbody").appendChild(row));
+            // re-append rows in sorted order
+            rows.forEach(r => tbody.appendChild(r));
         }
 
-        function applyStyle(col, val) {
-            let style = "";
-            let align = "left";
-            if (["Order", "Created On", "Planning", "Target Date", "End Date", "Cost", "Include", "Exclude"].includes(col)) {
-                align = "right";
-            } else if (["User Status", "MAT"].includes(col)) {
-                align = "center";
-            }
+        // --- filtering (per-column when possible) ---
+        let currentHeaders = []; // array of header strings
 
-            if (col === "Status Part") {
-                if (val === "Complete") style = "background-color:green;color:white";
-                else if (val === "Not Complete") style = "background-color:red;color:white";
-            } else if (col === "Aging") {
-                const aging = parseInt(val);
-                if (!isNaN(aging)) {
-                    if (aging <= 30) style = "background-color:green;color:white";
-                    else style = "background-color:red;color:white";
-                }
-            } else if (col === "Status AMT") {
-                if (val === "") style = "background-color:white;color:black";
-                else if (val === "O") style = "background-color:lightgray;color:black";
-                else if (val === "YTS") style = "background-color:green;color:white";
-                else if (val === "IP") style = "background-color:orange;color:red";
-                else if (val === "C") style = "background-color:black;color:white";
+        function getIndexByKeyword(keyword) {
+            keyword = (keyword || '').toLowerCase();
+            for (let i = 0; i < currentHeaders.length; i++) {
+                if ((currentHeaders[i] || '').toLowerCase().includes(keyword)) return i;
             }
-
-            return style="text-align:${align};${style}";
+            return -1;
         }
 
         function filterTable() {
-            const room = document.getElementById("filter-room").value.toLowerCase();
-            const order = document.getElementById("filter-order").value.toLowerCase();
-            const mat = document.getElementById("filter-mat").value.toLowerCase();
-            const section = document.getElementById("filter-section").value.toLowerCase();
-            const cph = document.getElementById("filter-cph").value.toLowerCase();
-            const status = document.getElementById("filter-status").value.toLowerCase();
+            const fRoom = document.getElementById("filter-room").value.trim().toLowerCase();
+            const fOrder = document.getElementById("filter-order").value.trim().toLowerCase();
+            const fMat = document.getElementById("filter-mat").value.trim().toLowerCase();
+            const fSection = document.getElementById("filter-section").value.trim().toLowerCase();
+            const fCph = document.getElementById("filter-cph").value.trim().toLowerCase();
+            const fStatus = document.getElementById("filter-status").value.trim().toLowerCase();
 
-            const rows = document.querySelectorAll("#wo-table tbody tr");
+            const tbody = document.querySelector("#wo-table tbody");
+            if (!tbody) return;
+            const rows = Array.from(tbody.rows);
+
+            // try to find column indices by keyword
+            const idxRoom = getIndexByKeyword('room');
+            const idxOrder = getIndexByKeyword('order');
+            const idxMat = getIndexByKeyword('mat');
+            const idxSection = getIndexByKeyword('section');
+            const idxCph = getIndexByKeyword('cph');
+            const idxStatus = getIndexByKeyword('status');
 
             rows.forEach(row => {
-                const cells = Array.from(row.cells).map(td => td.innerText.toLowerCase());
-                const show =
-                    (!room || cells.some(c => c.includes(room))) &&
-                    (!order || cells.some(c => c.includes(order))) &&
-                    (!mat || cells.some(c => c.includes(mat))) &&
-                    (!section || cells.some(c => c.includes(section))) &&
-                    (!cph || cells.some(c => c.includes(cph))) &&
-                    (!status || cells.some(c => c.includes(status)));
-                row.style.display = show ? "" : "none";
+                let show = true;
+
+                if (fRoom) {
+                    if (idxRoom >= 0) {
+                        if (!String(row.cells[idxRoom]?.innerText || '').toLowerCase().includes(fRoom)) show = false;
+                    } else if (!row.innerText.toLowerCase().includes(fRoom)) show = false;
+                }
+                if (show && fOrder) {
+                    if (idxOrder >= 0) {
+                        if (!String(row.cells[idxOrder]?.innerText || '').toLowerCase().includes(fOrder)) show = false;
+                    } else if (!row.innerText.toLowerCase().includes(fOrder)) show = false;
+                }
+                if (show && fMat) {
+                    if (idxMat >= 0) {
+                        if (!String(row.cells[idxMat]?.innerText || '').toLowerCase().includes(fMat)) show = false;
+                    } else if (!row.innerText.toLowerCase().includes(fMat)) show = false;
+                }
+                if (show && fSection) {
+                    if (idxSection >= 0) {
+                        if (!String(row.cells[idxSection]?.innerText || '').toLowerCase().includes(fSection)) show = false;
+                    } else if (!row.innerText.toLowerCase().includes(fSection)) show = false;
+                }
+                if (show && fCph) {
+                    if (idxCph >= 0) {
+                        if (!String(row.cells[idxCph]?.innerText || '').toLowerCase().includes(fCph)) show = false;
+                    } else if (!row.innerText.toLowerCase().includes(fCph)) show = false;
+                }
+                if (show && fStatus) {
+                    if (idxStatus >= 0) {
+                        if (!String(row.cells[idxStatus]?.innerText || '').toLowerCase().includes(fStatus)) show = false;
+                    } else if (!row.innerText.toLowerCase().includes(fStatus)) show = false;
+                }
+
+                row.style.display = show ? '' : 'none';
             });
         }
 
+        // attach filter inputs
         document.querySelectorAll(".filter-container input[type=text]").forEach(inp => {
-            inp.addEventListener("input", filterTable);
+            inp.addEventListener('input', filterTable);
         });
 
+        document.getElementById('clear-filters').addEventListener('click', function() {
+            document.querySelectorAll(".filter-container input[type=text]").forEach(inp => inp.value = '');
+            filterTable();
+        });
+
+        // --- file upload + build table ---
         document.getElementById('upload').addEventListener('change', function(e) {
+            const f = e.target.files[0];
+            if (!f) return;
             const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
+            reader.onload = function(ev) {
+                const data = new Uint8Array(ev.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
-                const json = XLSX.utils.sheet_to_json(sheet, {header:1});
-                const header = json[0];
+                const json = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true }); // raw: true to keep numbers/dates
+                if (!json || json.length === 0) {
+                    document.getElementById("wo-table").innerHTML = "<caption>No data</caption>";
+                    return;
+                }
+
+                // header and rows
+                let header = json[0].map(h => (h === null || h === undefined) ? "" : String(h).trim());
+                currentHeaders = header.slice(); // set global header array
                 const rows = json.slice(1);
 
-                let table = "<thead><tr>" + 
-    header.map(h => <th onclick="sortTable(this)">${h}</th>).join("") + 
-    "</tr></thead><tbody>";
+                // build table HTML (use concatenation to avoid nested template pitfalls)
+                let tableHtml = '<thead><tr>';
+                for (let i = 0; i < header.length; i++) {
+                    const h = escapeHtml(header[i]);
+                    tableHtml += '<th data-col-index="' + i + '" onclick="sortTable(this)">' + h + '</th>';
+                }
+                tableHtml += '</tr></thead><tbody>';
 
-rows.forEach(row => {
-    table += "<tr>";
-    header.forEach((col, i) => {
-        let val = row[i] || "";
-        if (["Created On", "Planning", "Target Date", "End Date"].includes(col)) {
-            val = formatDate(val);
-        } else if (["Cost", "Include", "Exclude"].includes(col)) {
-            val = formatCurrency(val);
-        }
-        const style = applyStyle(col, val);
-        table += <td ${style}>${val}</td>;
-    });
-    table += "</tr>";
-});
-table += "</tbody>";
+                rows.forEach(r => {
+                    tableHtml += '<tr>';
+                    for (let i = 0; i < header.length; i++) {
+                        const colName = header[i] || '';
+                        let rawVal = (r && r[i] !== undefined && r[i] !== null) ? r[i] : '';
 
-                document.getElementById("wo-table").innerHTML = table;
+                        // format dates and currency columns by colName (case-insensitive)
+                        const lc = colName.toLowerCase();
+                        let cellText = '';
+                        if (["created on", "planning", "target date", "end date"].some(x => x === lc)) {
+                            cellText = formatDateFromSerialOrDate(rawVal);
+                        } else if (["cost", "include", "exclude"].some(x => x === lc)) {
+                            cellText = formatCurrency(rawVal);
+                        } else {
+                            // preserve original if Date object or number that looks like excel date? keep safe
+                            if (rawVal instanceof Date) cellText = formatDateFromSerialOrDate(rawVal);
+                            else cellText = escapeHtml(String(rawVal));
+                        }
+
+                        const style = applyStyle(colName, cellText);
+                        tableHtml += '<td ' + style + '>' + cellText + '</td>';
+                    }
+                    tableHtml += '</tr>';
+                });
+
+                tableHtml += '</tbody>';
+                document.getElementById("wo-table").innerHTML = tableHtml;
+
+                // clear sort indicators
+                const thead = document.querySelector("#wo-table thead");
+                if (thead) clearSortIndicators(thead);
+
+                // apply any active filters (if user already typed)
+                filterTable();
             };
-            reader.readAsArrayBuffer(e.target.files[0]);
+            reader.readAsArrayBuffer(f);
         });
+
+        // expose sortTable to global scope (for inline onclick to work)
+        window.sortTable = sortTable;
     </script>
 </body>
 </html>
