@@ -403,22 +403,30 @@
         applyDetailFilters();
     });
 
-<!-- ================= Menu 3 : External Job ================= -->
-<div id="panel-ext" class="menu-panel" style="display:none;">
-  <h3>External Job</h3>
-  <div class="filter-container">
-    Room: <input type="text" id="e-filter-room" placeholder="filter Room">
-    Order: <input type="text" id="e-filter-order" placeholder="filter Order">
-    Activity: <input type="text" id="e-filter-activity" placeholder="filter Activity">
-    Description: <input type="text" id="e-filter-desc" placeholder="filter Desc">
-    PR Number: <input type="text" id="e-filter-pr" placeholder="filter Purchase Req No">
-    PO Number: <input type="text" id="e-filter-po" placeholder="filter Purchasing Doc No">
-    <input type="file" id="e-upload" accept=".xlsx,.xls">
-    <button id="e-clear">Clear filters</button>
+<!-- ================= MENU 3: External Job ================= -->
+<div id="panel-ext" class="panel" style="display:none;">
+  <h2>Menu 3 - External Job</h2>
+
+  <!-- Upload -->
+  <div class="upload-container">
+    <input type="file" id="e-upload" accept=".xlsx,.xls" />
   </div>
-  <div style="overflow-x:auto; max-height: 70vh;">
-    <table id="e-table" border="1" style="border-collapse:collapse; font-size:13px; width:95%; margin:auto;">
-      <thead><tr></tr></thead>
+
+  <!-- Filter -->
+  <div class="filter-container">
+    <input type="text" id="e-filter-room" placeholder="Filter Room">
+    <input type="text" id="e-filter-order" placeholder="Filter Order Number">
+    <input type="text" id="e-filter-activity" placeholder="Filter Activity Type">
+    <input type="text" id="e-filter-desc" placeholder="Filter Description">
+    <input type="text" id="e-filter-podoc" placeholder="Filter Purchase Document Number">
+    <input type="text" id="e-filter-prnum" placeholder="Filter Purchase Requisition Number">
+    <button id="e-clear">Clear</button>
+  </div>
+
+  <!-- Table -->
+  <div class="table-container">
+    <table id="e-table" border="1" cellspacing="0" cellpadding="5">
+      <thead></thead>
       <tbody></tbody>
     </table>
   </div>
@@ -428,137 +436,114 @@
 /*********************
  * Menu 3 - External Job
  *********************/
-let eHeaders = [];
 const eTable = document.getElementById('e-table');
+let eHeaders = [];
+let eRows = [];
 
+// Kolom yang akan ditampilkan di tabel
+const extCols = [
+  "Room","Manufacturer model number","Order Number","Maintenance activity type",
+  "Field displaying user status","Description","Aging WO","Net Price in PO USD",
+  "Cost Element","Service number","Service Short Text","Name",
+  "Purchase Requisition Number","Purchasing Document Number","Entry Sheet Number"
+];
+
+// Upload Excel
 document.getElementById('e-upload').addEventListener('change', function(e){
-    const f = e.target.files[0]; if (!f) return;
-    const reader = new FileReader();
-    reader.onload = function(ev) {
-        const data = new Uint8Array(ev.target.result);
-        const wb = XLSX.read(data, { type: 'array' });
-        const sheet = wb.Sheets[wb.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json(sheet, { header:1, raw:true });
-        if (!json || json.length === 0) { alert('No data'); return; }
-        eHeaders = json[0].map(h => h ? String(h).trim() : '');
-        const rows = json.slice(1);
-        buildTableFromJsonExternal(eTable, eHeaders, rows);
-        applyExtFilters();
-    };
-    reader.readAsArrayBuffer(f);
+  const f = e.target.files[0]; if (!f) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const data = new Uint8Array(ev.target.result);
+    const wb = XLSX.read(data, { type: 'array' });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const json = XLSX.utils.sheet_to_json(sheet, { header:1, raw:true });
+    if (!json || json.length === 0) { alert('No data'); return; }
+
+    // ambil header dari file excel
+    const allHeaders = json[0].map(h => h ? String(h).trim() : "");
+    // filter hanya header yang kita mau
+    eHeaders = extCols.filter(c => allHeaders.includes(c));
+
+    // ambil data baris
+    eRows = json.slice(1).map(row => {
+      return eHeaders.map(h => {
+        const idx = allHeaders.indexOf(h);
+        return idx >= 0 ? row[idx] : "";
+      });
+    });
+
+    buildETable();
+    applyExtFilters();
+  };
+  reader.readAsArrayBuffer(f);
 });
 
-function buildTableFromJsonExternal(table, headers, rows) {
-    const allowedHeaders = [
-      "Room","Manufacturer model number","Order Number","Maintenance activity type",
-      "Field displaying user status","Description","Aging WO","Net Price in PO USD",
-      "Cost Element","Service number","Service Short Text","Name",
-      "Purchase Requisition Number","Purchasing Document Number","Entry Sheet Number"
-    ];
+// Build tabel dari eHeaders & eRows
+function buildETable() {
+  const thead = eTable.querySelector('thead');
+  const tbody = eTable.querySelector('tbody');
+  thead.innerHTML = "";
+  tbody.innerHTML = "";
 
-    const alignMap = {
-      "Room": "left",
-      "Manufacturer model number": "left",
-      "Order Number": "right",
-      "Maintenance activity type": "center",
-      "Field displaying user status": "center",
-      "Description": "left",
-      "Aging WO": "right",
-      "Net Price in PO USD": "right",
-      "Cost Element": "right",
-      "Service number": "right",
-      "Service Short Text": "left",
-      "Name": "left",
-      "Purchase Requisition Number": "right",
-      "Purchasing Document Number": "right",
-      "Entry Sheet Number": "right"
-    };
+  // header
+  const htr = document.createElement("tr");
+  eHeaders.forEach(h => {
+    const th = document.createElement("th");
+    th.textContent = h;
+    htr.appendChild(th);
+  });
+  thead.appendChild(htr);
 
-    const thead = table.querySelector('thead');
-    const tbody = table.querySelector('tbody');
-    thead.innerHTML = ""; tbody.innerHTML = "";
-
-    // header
-    const trh = document.createElement("tr");
-    allowedHeaders.forEach(h => {
-      const th = document.createElement("th");
-      th.textContent = h;
-      th.style.textAlign = "center";
-      trh.appendChild(th);
+  // isi
+  eRows.forEach(r => {
+    const tr = document.createElement("tr");
+    r.forEach(val => {
+      const td = document.createElement("td");
+      td.textContent = val;
+      tr.appendChild(td);
     });
-    thead.appendChild(trh);
-
-    // rows
-    rows.forEach(r => {
-      const tr = document.createElement("tr");
-      allowedHeaders.forEach(h => {
-        const idx = headers.findIndex(x => x.toLowerCase() === h.toLowerCase());
-        const td = document.createElement("td");
-        let val = (idx >= 0 && r[idx] !== undefined) ? r[idx] : "";
-        
-        if (h === "Net Price in PO USD" && val !== "") {
-          const num = parseFloat(val) || 0;
-          val = "$" + num.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
-        }
-        
-        td.textContent = val;
-        td.style.textAlign = alignMap[h] || "left";
-        tr.appendChild(td);
-      });
-      tbody.appendChild(tr);
-    });
+    tbody.appendChild(tr);
+  });
 }
 
+// Get index kolom by nama
+function getIndexExt(name) {
+  return eHeaders.findIndex(h => h.toLowerCase() === name.toLowerCase());
+}
+
+// Filter
 function applyExtFilters() {
-    const fRoom = (document.getElementById('e-filter-room').value || '').toLowerCase();
-    const fOrder = (document.getElementById('e-filter-order').value || '').toLowerCase();
-    const fAct = (document.getElementById('e-filter-activity').value || '').toLowerCase();
-    const fDesc = (document.getElementById('e-filter-desc').value || '').toLowerCase();
-    const fPR = (document.getElementById('e-filter-pr').value || '').toLowerCase();
-    const fPO = (document.getElementById('e-filter-po').value || '').toLowerCase();
+  if (!eTable.tBodies[0]) return;
+  const rows = Array.from(eTable.tBodies[0].rows);
 
-    if (!eTable.tBodies[0]) return;
-    const rows = Array.from(eTable.tBodies[0].rows);
+  const fRoom   = document.getElementById('e-filter-room').value.toLowerCase();
+  const fOrder  = document.getElementById('e-filter-order').value.toLowerCase();
+  const fAct    = document.getElementById('e-filter-activity').value.toLowerCase();
+  const fDesc   = document.getElementById('e-filter-desc').value.toLowerCase();
+  const fPODoc  = document.getElementById('e-filter-podoc').value.toLowerCase();
+  const fPRNum  = document.getElementById('e-filter-prnum').value.toLowerCase();
 
-    const headers = Array.from(eTable.tHead.rows[0].cells).map(th => th.textContent.toLowerCase());
-    const idxRoom = headers.indexOf('room');
-    const idxOrder = headers.indexOf('order number');
-    const idxAct = headers.indexOf('maintenance activity type');
-    const idxDesc = headers.indexOf('description');
-    const idxPR = headers.indexOf('purchase requisition number');
-    const idxPO = headers.indexOf('purchasing document number');
+  const idxRoom  = getIndexExt("Room");
+  const idxOrder = getIndexExt("Order Number");
+  const idxAct   = getIndexExt("Maintenance activity type");
+  const idxDesc  = getIndexExt("Description");
+  const idxPODoc = getIndexExt("Purchasing Document Number");
+  const idxPRNum = getIndexExt("Purchase Requisition Number");
 
-    rows.forEach(row => {
-        let show = true;
-        if (fRoom && idxRoom >= 0) {
-            const txt = row.cells[idxRoom]?.textContent.toLowerCase() || '';
-            if (!txt.includes(fRoom)) show = false;
-        }
-        if (show && fOrder && idxOrder >= 0) {
-            const txt = row.cells[idxOrder]?.textContent.toLowerCase() || '';
-            if (!txt.includes(fOrder)) show = false;
-        }
-        if (show && fAct && idxAct >= 0) {
-            const txt = row.cells[idxAct]?.textContent.toLowerCase() || '';
-            if (!txt.includes(fAct)) show = false;
-        }
-        if (show && fDesc && idxDesc >= 0) {
-            const txt = row.cells[idxDesc]?.textContent.toLowerCase() || '';
-            if (!txt.includes(fDesc)) show = false;
-        }
-        if (show && fPR && idxPR >= 0) {
-            const txt = row.cells[idxPR]?.textContent.toLowerCase() || '';
-            if (!txt.includes(fPR)) show = false;
-        }
-        if (show && fPO && idxPO >= 0) {
-            const txt = row.cells[idxPO]?.textContent.toLowerCase() || '';
-            if (!txt.includes(fPO)) show = false;
-        }
-        row.style.display = show ? '' : 'none';
-    });
+  rows.forEach(row => {
+    let show = true;
+    if (fRoom && idxRoom >= 0)  if (!row.cells[idxRoom].textContent.toLowerCase().includes(fRoom)) show = false;
+    if (show && fOrder && idxOrder >= 0) if (!row.cells[idxOrder].textContent.toLowerCase().includes(fOrder)) show = false;
+    if (show && fAct && idxAct >= 0) if (!row.cells[idxAct].textContent.toLowerCase().includes(fAct)) show = false;
+    if (show && fDesc && idxDesc >= 0) if (!row.cells[idxDesc].textContent.toLowerCase().includes(fDesc)) show = false;
+    if (show && fPODoc && idxPODoc >= 0) if (!row.cells[idxPODoc].textContent.toLowerCase().includes(fPODoc)) show = false;
+    if (show && fPRNum && idxPRNum >= 0) if (!row.cells[idxPRNum].textContent.toLowerCase().includes(fPRNum)) show = false;
+    row.style.display = show ? "" : "none";
+  });
 }
 
-const debouncedApplyExtFilters = debounce(applyExtFilters, 120);
+// Clear filter
+const debouncedApplyExtFilters = debounce(applyExtFilters, 150);
 document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(inp => 
   inp.addEventListener('input', debouncedApplyExtFilters)
 );
