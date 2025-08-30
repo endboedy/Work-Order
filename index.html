@@ -297,19 +297,65 @@ const mTable=document.getElementById('m-table');
 function buildMonthlyTable(){
     if(!wTable.tBodies[0]) return;
     const filterMonth=(document.getElementById('m-filter-month').value||'').toLowerCase();
-    const headers=wHeaders.slice();
-    const rows=Array.from(wTable.tBodies[0].rows)
-        .filter(r=>{
-            const idxMonth=getIndex(headers,'month');
-            if(idxMonth<0) return false;
-            const txt=r.cells[idxMonth]?.textContent.toLowerCase()||'';
-            return filterMonth?txt.includes(filterMonth):true;
+  
+// ----------------- Menu 4: List WO Monthly -----------------
+const mTable = document.getElementById('m-table');
+
+function buildMonthlyTable(){
+    if(!wTable.tBodies[0]) return;
+
+    // ambil semua filter
+    const fMonth      = (document.getElementById('m-filter-month').value||'').toLowerCase();
+    const fRoom       = (document.getElementById('m-filter-room').value||'').toLowerCase();
+    const fUserStatus = (document.getElementById('m-filter-statususer').value||'').toLowerCase();
+    const fMat        = (document.getElementById('m-filter-mat').value||'').toLowerCase();
+    const fCph        = (document.getElementById('m-filter-cph').value||'').toLowerCase();
+    const fSection    = (document.getElementById('m-filter-section').value||'').toLowerCase();
+    const fStatusAmt  = (document.getElementById('m-filter-statusamt').value||'').toLowerCase();
+
+    const headers = wHeaders.slice();
+    const rows = Array.from(wTable.tBodies[0].rows)
+        .filter(r => {
+            let show = true;
+
+            const idxMonth = getIndex(headers,'month');
+            if(idxMonth>=0 && fMonth && !(r.cells[idxMonth]?.textContent.toLowerCase()||'').includes(fMonth)) show = false;
+
+            const idxRoom = getIndex(headers,'room');
+            if(idxRoom>=0 && fRoom && !(r.cells[idxRoom]?.textContent.toLowerCase()||'').includes(fRoom)) show = false;
+
+            const idxUserStatus = getIndex(headers,'user status');
+            if(idxUserStatus>=0 && fUserStatus && !(r.cells[idxUserStatus]?.textContent.toLowerCase()||'').includes(fUserStatus)) show = false;
+
+            const idxMat = getIndex(headers,'mat');
+            if(idxMat>=0 && fMat && !(r.cells[idxMat]?.textContent.toLowerCase()||'').includes(fMat)) show = false;
+
+            const idxCph = getIndex(headers,'cph');
+            if(idxCph>=0 && fCph && !(r.cells[idxCph]?.textContent.toLowerCase()||'').includes(fCph)) show = false;
+
+            const idxSection = getIndex(headers,'section');
+            if(idxSection>=0 && fSection && !(r.cells[idxSection]?.textContent.toLowerCase()||'').includes(fSection)) show = false;
+
+            const idxStatusAmt = getIndex(headers,'status amt');
+            if(idxStatusAmt>=0 && fStatusAmt && !(r.cells[idxStatusAmt]?.textContent.toLowerCase()||'').includes(fStatusAmt)) show = false;
+
+            return show;
         })
-        .map(r=>Array.from(r.cells).map(c=>c.textContent));
-    buildTableFromJson(mTable,headers,rows);
+        .map(r => Array.from(r.cells).map(c => c.textContent));
+
+    buildTableFromJson(mTable, headers, rows);
 }
-document.getElementById('m-filter-month').addEventListener('input',debounce(buildMonthlyTable,120));
-document.getElementById('m-clear').addEventListener('click',()=>{document.getElementById('m-filter-month').value=''; buildMonthlyTable();});
+
+// event listener untuk filter
+document.querySelectorAll("#panel-monthly .filter-container input[type=text]").forEach(inp => {
+    inp.addEventListener('input', debounce(buildMonthlyTable, 120));
+});
+
+// tombol clear semua filter
+document.getElementById('m-clear').addEventListener('click', () => {
+    document.querySelectorAll("#panel-monthly .filter-container input[type=text]").forEach(i => i.value='');
+    buildMonthlyTable();
+});
 
 </script>
 </body>
