@@ -1,195 +1,185 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Work Order EM</title>
-  <style>
-    body { font-family: Arial, sans-serif; }
-    .panel { display:none; margin-top:20px; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 5px; text-align: center; }
-    .filter-container { margin-bottom: 10px; }
-  </style>
+    <meta charset="utf-8" />
+    <title>WORK_ORDER_EM - Multi Menu</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: Arial; font-size: 12px; margin: 12px; }
+        .tabs { display:flex; gap:8px; margin-bottom:12px; }
+        .tab { padding:8px 14px; background:#e9f0ff; border-radius:6px; cursor:pointer; user-select:none; }
+        .tab.active { background:#2f80ed; color:white; font-weight:600; }
+        .panel { display:none; }
+        .panel.active { display:block; }
+        .filter-container { margin-bottom: 12px; padding: 10px; background-color: #f7f7f7; border-radius: 6px; }
+        .filter-container label { margin-right: 8px; font-size: 13px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+        th, td { border: 1px solid #ccc; padding: 6px; }
+        th { background-color: #eee; cursor: pointer; user-select: none; position: relative; }
+        th.sort-asc::after { content: " ▲"; font-size: 10px; color: #333; }
+        th.sort-desc::after { content: " ▼"; font-size: 10px; color: #333; }
+        tbody tr:nth-child(odd) { background: #fbfdff; }
+        tbody tr:hover { background: #eef6ff; }
+        .small { font-size:11px; color:#333; }
+        .controls { margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+        .btn { padding:6px 10px; border-radius:4px; border:1px solid #ccc; background:white; cursor:pointer; }
+    </style>
 </head>
 <body>
-  <h1>Work Order EM</h1>
+    <h2>WORK_ORDER_EM</h2>
 
-  <!-- Menu Buttons -->
-  <button onclick="showMenu('panel-pm')">Menu 1 - Planning PM</button>
-  <button onclick="showMenu('panel-smu')">Menu 2 - Current SMU</button>
-  <button onclick="showMenu('panel-ext')">Menu 3 - External Job</button>
-
-  <!-- ================= MENU 1 ================= -->
-  <div id="panel-pm" class="panel">
-    <h2>Menu 1 - Planning PM</h2>
-    <input type="file" id="pm-upload" accept=".xlsx,.xls" />
-    <table id="pm-table"></table>
-  </div>
-
-  <!-- ================= MENU 2 ================= -->
-  <div id="panel-smu" class="panel">
-    <h2>Menu 2 - Current SMU</h2>
-    <input type="file" id="smu-upload" accept=".xlsx,.xls" />
-    <table id="smu-table"></table>
-  </div>
-
-  <!-- ================= MENU 3 ================= -->
-  <div id="panel-ext" class="panel">
-    <h2>Menu 3 - External Job</h2>
-    <input type="file" id="e-upload" accept=".xlsx,.xls" />
-
-    <div class="filter-container">
-      <input type="text" id="e-filter-room" placeholder="Filter Room">
-      <input type="text" id="e-filter-order" placeholder="Filter Order Number">
-      <input type="text" id="e-filter-activity" placeholder="Filter Activity Type">
-      <input type="text" id="e-filter-desc" placeholder="Filter Description">
-      <input type="text" id="e-filter-pr" placeholder="Filter Purchase Requisition Number">
-      <input type="text" id="e-filter-pd" placeholder="Filter Purchase Document Number">
-      <button id="e-clear">Clear</button>
+    <div class="tabs">
+        <div class="tab active" id="tab-work">Work Order</div>
+        <div class="tab" id="tab-detail">Detail Part</div>
+        <div class="tab" id="tab-ext">External Job</div>
     </div>
 
-    <table id="e-table"></table>
-  </div>
+    <!-- PANEL: Work Order (Menu 1) -->
+    <div class="panel active" id="panel-work">
+        <div class="filter-container">
+            <label>Room: <input type="text" id="w-filter-room"></label>
+            <label>Order: <input type="text" id="w-filter-order"></label>
+            <label>MAT: <input type="text" id="w-filter-mat"></label>
+            <label>Section: <input type="text" id="w-filter-section"></label>
+            <label>CPH: <input type="text" id="w-filter-cph"></label>
+            <label>Status: <input type="text" id="w-filter-status"></label>
+            <div class="controls">
+                <input type="file" id="w-upload" accept=".xlsx" />
+                <button class="btn" id="w-clear">Clear filters</button>
+            </div>
+        </div>
+        <table id="w-table" class="small"></table>
+    </div>
 
-  <!-- ================= SCRIPT ================= -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script>
-    function showMenu(id) {
-      document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
-      document.getElementById(id).style.display = 'block';
-    }
+    <!-- PANEL: Detail Part (Menu 2) -->
+    <div class="panel" id="panel-detail">
+        <div class="filter-container">
+            <label>Order: <input type="text" id="d-filter-order"></label>
+            <label>Material Number: <input type="text" id="d-filter-matnum"></label>
+            <label>Material Description: <input type="text" id="d-filter-matdesc"></label>
+            <div class="controls">
+                <input type="file" id="d-upload" accept=".xlsx" />
+                <button class="btn" id="d-clear">Clear filters</button>
+            </div>
+        </div>
+        <table id="d-table" class="small"></table>
+    </div>
 
-    function buildTableFromJson(table, headers, rows) {
-      table.innerHTML = '';
-      const thead = table.createTHead();
-      const tr = thead.insertRow();
-      headers.forEach(h => {
-        const th = document.createElement('th');
-        th.textContent = h;
-        tr.appendChild(th);
-      });
-      const tbody = table.createTBody();
-      rows.forEach(r => {
-        const row = tbody.insertRow();
-        headers.forEach((_, i) => {
-          const cell = row.insertCell();
-          cell.textContent = r[i] !== undefined ? r[i] : '';
-        });
-      });
-    }
+    <!-- PANEL: External Job (Menu 3) -->
+    <div class="panel" id="panel-ext">
+        <div class="filter-container">
+            <label>Room: <input type="text" id="e-filter-room"></label>
+            <label>Order: <input type="text" id="e-filter-order"></label>
+            <label>Activity: <input type="text" id="e-filter-activity"></label>
+            <label>Description: <input type="text" id="e-filter-desc"></label>
+            <label>Purchase Doc: <input type="text" id="e-filter-podoc"></label>
+            <label>Purchase Req: <input type="text" id="e-filter-prnum"></label>
+            <div class="controls">
+                <input type="file" id="e-upload" accept=".xlsx" />
+                <button class="btn" id="e-clear">Clear filters</button>
+            </div>
+        </div>
+        <table id="e-table" class="small"></table>
+    </div>
 
-    function getIndex(headers, name) {
-      const n = name.toLowerCase();
-      return headers.findIndex(h => h.toLowerCase().includes(n));
-    }
-
-    function debounce(fn, delay) {
-      let t; 
-      return function(...args) {
-        clearTimeout(t);
-        t = setTimeout(() => fn.apply(this, args), delay);
-      }
+    <script>
+    /*********************
+     * HELPERS
+     *********************/
+    function debounce(fn, wait) { let t; return function(...args) { clearTimeout(t); t = setTimeout(() => fn.apply(this, args), wait); }; }
+    function getIndex(headers, keyword) { keyword = (keyword || '').toLowerCase(); return headers.findIndex(h => (h || '').toLowerCase().includes(keyword)); }
+    function buildTableFromJson(tableEl, headers, rows) {
+        tableEl.innerHTML = "";
+        const thead = document.createElement('thead');
+        const tr = document.createElement('tr');
+        headers.forEach((h, idx) => { const th = document.createElement('th'); th.textContent = h; tr.appendChild(th); });
+        thead.appendChild(tr); tableEl.appendChild(thead);
+        const tbody = document.createElement('tbody');
+        rows.forEach(rowArr => { const row = document.createElement('tr'); headers.forEach((h,i)=>{ const td=document.createElement('td'); td.textContent=rowArr[i]||""; row.appendChild(td); }); tbody.appendChild(row); });
+        tableEl.appendChild(tbody);
     }
 
     /*********************
-     * Menu 1
+     * Tabs
      *********************/
-    document.getElementById('pm-upload').addEventListener('change', function(e){
-      const f = e.target.files[0]; if (!f) return;
-      const reader = new FileReader();
-      reader.onload = function(ev){
-        const wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array'});
-        const sheet = wb.Sheets[wb.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json(sheet, {header:1});
-        buildTableFromJson(document.getElementById('pm-table'), json[0], json.slice(1));
-      };
-      reader.readAsArrayBuffer(f);
-    });
-
-    /*********************
-     * Menu 2
-     *********************/
-    document.getElementById('smu-upload').addEventListener('change', function(e){
-      const f = e.target.files[0]; if (!f) return;
-      const reader = new FileReader();
-      reader.onload = function(ev){
-        const wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array'});
-        const sheet = wb.Sheets[wb.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json(sheet, {header:1});
-        buildTableFromJson(document.getElementById('smu-table'), json[0], json.slice(1));
-      };
-      reader.readAsArrayBuffer(f);
-    });
-
-    /*********************
-     * Menu 3
-     *********************/
-    let eHeaders = [];
-    const eTable = document.getElementById('e-table');
-
-    document.getElementById('e-upload').addEventListener('change', function(e){
-      const f = e.target.files[0]; if (!f) return;
-      const reader = new FileReader();
-      reader.onload = function(ev) {
-        const wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array'});
-        const sheet = wb.Sheets[wb.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json(sheet, {header:1});
-        eHeaders = json[0];
-        const rows = json.slice(1);
-
-        // filter hanya kolom yang diinginkan
-        const wanted = [
-          "Room","Manufacturer model number","Order Number","Maintenance activity type",
-          "Field displaying user status","Description","Aging WO","Net Price in PO USD",
-          "Cost Element","Service number","Service Short Text","Name",
-          "Purchase Requisition Number","Purchasing Document Number","Entry Sheet Number"
-        ];
-        const idxs = wanted.map(w => getIndex(eHeaders, w));
-        const newHeaders = wanted;
-        const newRows = rows.map(r => idxs.map(i => r[i]));
-        
-        buildTableFromJson(eTable, newHeaders, newRows);
-        applyExtFilters();
-      };
-      reader.readAsArrayBuffer(f);
-    });
-
-    function applyExtFilters() {
-      const fRoom = (document.getElementById('e-filter-room').value || '').toLowerCase();
-      const fOrder = (document.getElementById('e-filter-order').value || '').toLowerCase();
-      const fAct = (document.getElementById('e-filter-activity').value || '').toLowerCase();
-      const fDesc = (document.getElementById('e-filter-desc').value || '').toLowerCase();
-      const fPR = (document.getElementById('e-filter-pr').value || '').toLowerCase();
-      const fPD = (document.getElementById('e-filter-pd').value || '').toLowerCase();
-      if (!eTable.tBodies[0]) return;
-      const rows = Array.from(eTable.tBodies[0].rows);
-
-      const idxRoom = getIndex(eHeaders, 'room');
-      const idxOrder = getIndex(eHeaders, 'order number');
-      const idxAct = getIndex(eHeaders, 'maintenance activity type');
-      const idxDesc = getIndex(eHeaders, 'description');
-      const idxPR = getIndex(eHeaders, 'purchase requisition number');
-      const idxPD = getIndex(eHeaders, 'purchasing document number');
-
-      rows.forEach(row => {
-        let show = true;
-        if (fRoom && idxRoom >= 0 && !row.cells[idxRoom].textContent.toLowerCase().includes(fRoom)) show = false;
-        if (show && fOrder && idxOrder >= 0 && !row.cells[idxOrder].textContent.toLowerCase().includes(fOrder)) show = false;
-        if (show && fAct && idxAct >= 0 && !row.cells[idxAct].textContent.toLowerCase().includes(fAct)) show = false;
-        if (show && fDesc && idxDesc >= 0 && !row.cells[idxDesc].textContent.toLowerCase().includes(fDesc)) show = false;
-        if (show && fPR && idxPR >= 0 && !row.cells[idxPR].textContent.toLowerCase().includes(fPR)) show = false;
-        if (show && fPD && idxPD >= 0 && !row.cells[idxPD].textContent.toLowerCase().includes(fPD)) show = false;
-        row.style.display = show ? '' : 'none';
-      });
+    const tabWork=document.getElementById('tab-work'), tabDetail=document.getElementById('tab-detail'), tabExt=document.getElementById('tab-ext');
+    const panelWork=document.getElementById('panel-work'), panelDetail=document.getElementById('panel-detail'), panelExt=document.getElementById('panel-ext');
+    function showMenu(id){ [tabWork,tabDetail,tabExt].forEach(t=>t.classList.remove('active')); [panelWork,panelDetail,panelExt].forEach(p=>p.classList.remove('active'));
+      if(id==='work'){tabWork.classList.add('active');panelWork.classList.add('active');}
+      else if(id==='detail'){tabDetail.classList.add('active');panelDetail.classList.add('active');}
+      else{tabExt.classList.add('active');panelExt.classList.add('active');}
     }
+    tabWork.addEventListener('click',()=>showMenu('work'));
+    tabDetail.addEventListener('click',()=>showMenu('detail'));
+    tabExt.addEventListener('click',()=>showMenu('ext'));
 
-    const debouncedApplyExtFilters = debounce(applyExtFilters, 120);
-    document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(inp => 
-      inp.addEventListener('input', debouncedApplyExtFilters));
-    document.getElementById('e-clear').addEventListener('click', () => {
-      document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(i => i.value = '');
-      applyExtFilters();
+    /*********************
+     * Menu 1 - Work Order
+     *********************/
+    let wHeaders=[]; const wTable=document.getElementById('w-table');
+    document.getElementById('w-upload').addEventListener('change', function(e){
+        const f=e.target.files[0]; if(!f)return; const reader=new FileReader();
+        reader.onload=function(ev){ const data=new Uint8Array(ev.target.result); const wb=XLSX.read(data,{type:'array'});
+            const sheet=wb.Sheets[wb.SheetNames[0]]; const json=XLSX.utils.sheet_to_json(sheet,{header:1,raw:true});
+            if(!json.length){alert("No data");return;} wHeaders=json[0]; const rows=json.slice(1);
+            buildTableFromJson(wTable,wHeaders,rows); applyWorkFilters(); };
+        reader.readAsArrayBuffer(f);
     });
-  </script>
+    function applyWorkFilters(){ /* ... sama kayak sebelumnya ... */ }
+    const debouncedApplyWorkFilters=debounce(applyWorkFilters,120);
+    document.querySelectorAll("#panel-work .filter-container input[type=text]").forEach(inp=>inp.addEventListener('input',debouncedApplyWorkFilters));
+    document.getElementById('w-clear').addEventListener('click',()=>{document.querySelectorAll("#panel-work .filter-container input[type=text]").forEach(i=>i.value='');applyWorkFilters();});
+
+    /*********************
+     * Menu 2 - Detail Part
+     *********************/
+    let dHeaders=[]; const dTable=document.getElementById('d-table');
+    document.getElementById('d-upload').addEventListener('change', function(e){
+        const f=e.target.files[0]; if(!f)return; const reader=new FileReader();
+        reader.onload=function(ev){ const data=new Uint8Array(ev.target.result); const wb=XLSX.read(data,{type:'array'});
+            const sheet=wb.Sheets[wb.SheetNames[0]]; const json=XLSX.utils.sheet_to_json(sheet,{header:1,raw:true});
+            if(!json.length){alert("No data");return;} dHeaders=json[0]; const rows=json.slice(1);
+            buildTableFromJson(dTable,dHeaders,rows); applyDetailFilters(); };
+        reader.readAsArrayBuffer(f);
+    });
+    function applyDetailFilters(){ /* ... sama kayak sebelumnya ... */ }
+    const debouncedApplyDetailFilters=debounce(applyDetailFilters,120);
+    document.querySelectorAll("#panel-detail .filter-container input[type=text]").forEach(inp=>inp.addEventListener('input',debouncedApplyDetailFilters));
+    document.getElementById('d-clear').addEventListener('click',()=>{document.querySelectorAll("#panel-detail .filter-container input[type=text]").forEach(i=>i.value='');applyDetailFilters();});
+
+    /*********************
+     * Menu 3 - External Job
+     *********************/
+    const eTable=document.getElementById('e-table'); let eHeaders=[],eRows=[];
+    const extCols=["Room","Manufacturer model number","Order Number","Maintenance activity type","Field displaying user status","Description","Aging WO","Net Price in PO USD","Cost Element","Service number","Service Short Text","Name","Purchase Requisition Number","Purchasing Document Number","Entry Sheet Number"];
+    document.getElementById('e-upload').addEventListener('change',function(e){const f=e.target.files[0];if(!f)return;const reader=new FileReader();
+      reader.onload=function(ev){const data=new Uint8Array(ev.target.result);const wb=XLSX.read(data,{type:'array'});const sheet=wb.Sheets[wb.SheetNames[0]];const json=XLSX.utils.sheet_to_json(sheet,{header:1,raw:true});
+        if(!json.length){alert("No data");return;} const allHeaders=json[0].map(h=>h?String(h).trim():"");
+        eHeaders=extCols.filter(c=>allHeaders.includes(c));
+        eRows=json.slice(1).map(row=>eHeaders.map(h=>{const idx=allHeaders.indexOf(h);return idx>=0?row[idx]:"";}));
+        buildTableFromJson(eTable,eHeaders,eRows); applyExtFilters();}; reader.readAsArrayBuffer(f);});
+    function getIndexExt(name){return eHeaders.findIndex(h=>h.toLowerCase()===name.toLowerCase());}
+    function applyExtFilters(){ if(!eTable.tBodies[0])return; const rows=Array.from(eTable.tBodies[0].rows);
+      const fRoom=document.getElementById('e-filter-room').value.toLowerCase();
+      const fOrder=document.getElementById('e-filter-order').value.toLowerCase();
+      const fAct=document.getElementById('e-filter-activity').value.toLowerCase();
+      const fDesc=document.getElementById('e-filter-desc').value.toLowerCase();
+      const fPODoc=document.getElementById('e-filter-podoc').value.toLowerCase();
+      const fPRNum=document.getElementById('e-filter-prnum').value.toLowerCase();
+      const idxRoom=getIndexExt("Room"), idxOrder=getIndexExt("Order Number"), idxAct=getIndexExt("Maintenance activity type"),
+            idxDesc=getIndexExt("Description"), idxPODoc=getIndexExt("Purchasing Document Number"), idxPRNum=getIndexExt("Purchase Requisition Number");
+      rows.forEach(row=>{let show=true;
+        if(fRoom&&idxRoom>=0&&!row.cells[idxRoom].textContent.toLowerCase().includes(fRoom))show=false;
+        if(show&&fOrder&&idxOrder>=0&&!row.cells[idxOrder].textContent.toLowerCase().includes(fOrder))show=false;
+        if(show&&fAct&&idxAct>=0&&!row.cells[idxAct].textContent.toLowerCase().includes(fAct))show=false;
+        if(show&&fDesc&&idxDesc>=0&&!row.cells[idxDesc].textContent.toLowerCase().includes(fDesc))show=false;
+        if(show&&fPODoc&&idxPODoc>=0&&!row.cells[idxPODoc].textContent.toLowerCase().includes(fPODoc))show=false;
+        if(show&&fPRNum&&idxPRNum>=0&&!row.cells[idxPRNum].textContent.toLowerCase().includes(fPRNum))show=false;
+        row.style.display=show?"":"none";});
+    }
+    const debouncedApplyExtFilters=debounce(applyExtFilters,150);
+    document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(inp=>inp.addEventListener('input',debouncedApplyExtFilters));
+    document.getElementById('e-clear').addEventListener('click',()=>{document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(i=>i.value='');applyExtFilters();});
+    </script>
 </body>
 </html>
