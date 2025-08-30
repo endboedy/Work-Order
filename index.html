@@ -1,89 +1,472 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>WORK_ORDER_EM</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    .menu { margin-bottom: 20px; }
-    table { border-collapse: collapse; margin-top: 10px; width: 90%; font-size: 12px; }
-    th, td { border: 1px solid #999; padding: 5px; text-align: center; }
-    th { background: #f2f2f2; }
-    .hidden { display: none; }
-  </style>
+    <meta charset="utf-8" />
+    <title>WORK_ORDER_EM - Multi Menu</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: Arial; font-size: 12px; margin: 12px; }
+        .tabs { display:flex; gap:8px; margin-bottom:12px; }
+        .tab { padding:8px 14px; background:#e9f0ff; border-radius:6px; cursor:pointer; user-select:none; }
+        .tab.active { background:#2f80ed; color:white; font-weight:600; }
+        .panel { display:none; }
+        .panel.active { display:block; }
+        .filter-container { margin-bottom: 12px; padding: 10px; background-color: #f7f7f7; border-radius: 6px; }
+        .filter-container label { margin-right: 8px; font-size: 13px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+        th, td { border: 1px solid #ccc; padding: 6px; }
+        th { background-color: #eee; cursor: pointer; user-select: none; position: relative; }
+        th.sort-asc::after { content: " ▲"; font-size: 10px; color: #333; }
+        th.sort-desc::after { content: " ▼"; font-size: 10px; color: #333; }
+        tbody tr:nth-child(odd) { background: #fbfdff; }
+        tbody tr:hover { background: #eef6ff; }
+        .small { font-size:11px; color:#333; }
+        .controls { margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+        .btn { padding:6px 10px; border-radius:4px; border:1px solid #ccc; background:white; cursor:pointer; }
+    </style>
 </head>
 <body>
-  <h2>WORK_ORDER_EM</h2>
+    <h2>WORK_ORDER_EM</h2>
 
-  <!-- Menu Buttons -->
-  <div class="menu">
-    <button onclick="showMenu(1)">Work Order</button>
-    <button onclick="showMenu(2)">Detail Part</button>
-    <button onclick="showMenu(3)">External Job</button>
-  </div>
+    <div class="tabs">
+        <div class="tab active" id="tab-work">Work Order</div>
+        <div class="tab" id="tab-detail">Detail Part</div>
+        <div class="tab" id="tab-ext">External Job</div>
+    </div>
 
-  <!-- Menu 1 -->
-  <div id="menu1" class="menu-content">
-    <h3>Menu 1 - Work Order</h3>
-    <input type="file" id="fileMenu1" accept=".xlsx,.xls" />
-    <div id="outputMenu1"></div>
-  </div>
+    <!-- PANEL: Work Order (Menu 1) -->
+    <div class="panel active" id="panel-work">
+        <div class="filter-container">
+            <label>Room: <input type="text" id="w-filter-room"></label>
+            <label>Order: <input type="text" id="w-filter-order"></label>
+            <label>MAT: <input type="text" id="w-filter-mat"></label>
+            <label>Section: <input type="text" id="w-filter-section"></label>
+            <label>CPH: <input type="text" id="w-filter-cph"></label>
+            <label>Status: <input type="text" id="w-filter-status"></label>
+            <div class="controls">
+                <input type="file" id="w-upload" accept=".xlsx" />
+                <button class="btn" id="w-clear">Clear filters</button>
+            </div>
+        </div>
+        <table id="w-table" class="small"></table>
+    </div>
 
-  <!-- Menu 2 -->
-  <div id="menu2" class="menu-content hidden">
-    <h3>Menu 2 - Detail Part</h3>
-    <input type="file" id="fileMenu2" accept=".xlsx,.xls" />
-    <div id="outputMenu2"></div>
-  </div>
+    <!-- PANEL: Detail Part (Menu 2) -->
+    <div class="panel" id="panel-detail">
+        <div class="filter-container">
+            <label>Order: <input type="text" id="d-filter-order"></label>
+            <label>Material Number: <input type="text" id="d-filter-matnum"></label>
+            <label>Material Description: <input type="text" id="d-filter-matdesc"></label>
+            <div class="controls">
+                <input type="file" id="d-upload" accept=".xlsx" />
+                <button class="btn" id="d-clear">Clear filters</button>
+            </div>
+        </div>
+        <table id="d-table" class="small"></table>
+    </div>
 
-  <!-- Menu 3 -->
-  <div id="menu3" class="menu-content hidden">
-    <h3>Menu 3 - External Job</h3>
-    <input type="file" id="fileMenu3" accept=".xlsx,.xls" />
-    <div id="outputMenu3"></div>
-  </div>
+    <!-- PANEL: External Job (Menu 3) -->
+    <div class="panel" id="panel-ext">
+        <div class="filter-container">
+            <label>Room: <input type="text" id="e-filter-room"></label>
+            <label>Order: <input type="text" id="e-filter-order"></label>
+            <label>Activity: <input type="text" id="e-filter-activity"></label>
+            <label>Description: <input type="text" id="e-filter-desc"></label>
+            <div class="controls">
+                <input type="file" id="e-upload" accept=".xlsx" />
+                <button class="btn" id="e-clear">Clear filters</button>
+            </div>
+        </div>
+        <table id="e-table" class="small"></table>
+    </div>
 
-  <script>
-    function showMenu(num) {
-      document.querySelectorAll(".menu-content").forEach(div => div.classList.add("hidden"));
-      document.getElementById("menu" + num).classList.remove("hidden");
+    <script>
+    /*********************
+     * HELPERS
+     *********************/
+    function formatDateFromSerialOrDate(v) {
+        if (v === null || v === undefined || v === '') return "";
+        const options = { day: '2-digit', month: 'short', year: 'numeric' };
+        if (v instanceof Date) return v.toLocaleDateString('en-US', options).replace(/ /g, '-');
+        if (typeof v === 'number') {
+            const date = new Date(Math.round((v - 25569) * 86400 * 1000));
+            return date.toLocaleDateString('en-US', options).replace(/ /g, '-');
+        }
+        const parsed = Date.parse(String(v));
+        if (!isNaN(parsed)) return new Date(parsed).toLocaleDateString('en-US', options).replace(/ /g, '-');
+        return String(v);
     }
 
-    // Fungsi umum untuk render Excel ke tabel
-    function renderTable(jsonData, outputId) {
-      if (jsonData.length === 0) return;
-      let table = "<table><thead><tr>";
-      Object.keys(jsonData[0]).forEach(key => table += <th>${key}</th>);
-      table += "</tr></thead><tbody>";
-      jsonData.forEach(row => {
-        table += "<tr>";
-        Object.values(row).forEach(val => table += <td>${val ?? ""}</td>);
-        table += "</tr>";
-      });
-      table += "</tbody></table>";
-      document.getElementById(outputId).innerHTML = table;
+    function formatCurrency(value) {
+        if (value === null || value === undefined || value === '') return "";
+        const num = Number(String(value).replace(/[^0-9.-]/g, ''));
+        return !isNaN(num) ? ("$" + Math.round(num).toLocaleString()) : String(value);
     }
 
-    // Handler Upload untuk tiap menu
-    function handleFileMenu(fileInput, outputId) {
-      const file = fileInput.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = e => {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: "array" });
-        const sheet = workbook.SheetNames[0];
-        const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sheet]);
-        renderTable(jsonData, outputId);
-      };
-      reader.readAsArrayBuffer(file);
+    function applyStyleToTd(td, colName, valText) {
+        if (!td) return;
+        const col = String(colName || '').toLowerCase();
+        const val = (valText === null || valText === undefined) ? '' : String(valText).trim();
+        if (["order","created on","planning","target date","end date","cost","include","exclude"].includes(col)) {
+            td.style.textAlign = "right";
+        } else if (["user status","mat"].includes(col)) {
+            td.style.textAlign = "center";
+        } else td.style.textAlign = "left";
+
+        if (col === "status part") {
+            if (val === "Complete") { td.style.backgroundColor = "green"; td.style.color = "white"; }
+            else if (val === "Not Complete") { td.style.backgroundColor = "red"; td.style.color = "white"; }
+        } else if (col === "aging") {
+            const aging = parseInt(val);
+            if (!isNaN(aging)) { td.style.backgroundColor = (aging <= 30) ? "green" : "red"; td.style.color = "white"; }
+        } else if (col === "status amt") {
+            if (val === "O") { td.style.backgroundColor = "lightgray"; td.style.color = "black"; }
+            else if (val === "YTS") { td.style.backgroundColor = "green"; td.style.color = "white"; }
+            else if (val === "IP") { td.style.backgroundColor = "orange"; td.style.color = "red"; }
+            else if (val === "C") { td.style.backgroundColor = "black"; td.style.color = "white"; }
+        }
     }
 
-    // Event listener untuk tiap menu
-    document.getElementById("fileMenu1").addEventListener("change", e => handleFileMenu(e.target, "outputMenu1"));
-    document.getElementById("fileMenu2").addEventListener("change", e => handleFileMenu(e.target, "outputMenu2"));
-    document.getElementById("fileMenu3").addEventListener("change", e => handleFileMenu(e.target, "outputMenu3"));
-  </script>
+    function parseValueForSort(text) {
+        const s = (text === null || text === undefined) ? '' : String(text).trim();
+        if (s === '') return '';
+        const num = Number(s.replace(/[^0-9.\-]/g, ''));
+        if (!isNaN(num) && /[0-9]/.test(s)) return num;
+        const parsed = Date.parse(s);
+        if (!isNaN(parsed)) return parsed;
+        return s.toLowerCase();
+    }
+
+    function clearSortIndicators(tableEl) {
+        if (!tableEl) return;
+        tableEl.querySelectorAll('th').forEach(th => {
+            th.classList.remove('sort-asc','sort-desc');
+            delete th.dataset.sorted;
+        });
+    }
+
+    function debounce(fn, wait) {
+        let t;
+        return function(...args) {
+            clearTimeout(t);
+            t = setTimeout(() => fn.apply(this, args), wait);
+        };
+    }
+
+    /*********************
+     * DOM-safe table builder & sorter
+     *********************/
+    function buildTableFromJson(tableEl, headers, rows) {
+        // clear
+        while (tableEl.firstChild) tableEl.removeChild(tableEl.firstChild);
+        // thead
+        const thead = document.createElement('thead');
+        const tr = document.createElement('tr');
+        headers.forEach((h, idx) => {
+            const th = document.createElement('th');
+            th.textContent = h;
+            th.dataset.colIndex = idx;
+            th.addEventListener('click', () => sortTableByIndex(tableEl, idx, th));
+            tr.appendChild(th);
+        });
+        thead.appendChild(tr);
+        tableEl.appendChild(thead);
+
+        // tbody
+        const tbody = document.createElement('tbody');
+        const frag = document.createDocumentFragment();
+        rows.forEach(rowArr => {
+            const row = document.createElement('tr');
+            for (let i = 0; i < headers.length; i++) {
+                const colName = headers[i] || '';
+                let rawVal = (rowArr && rowArr[i] !== undefined && rowArr[i] !== null) ? rowArr[i] : '';
+                let cellText = '';
+                const lc = colName.toLowerCase();
+                if (["created on","planning","target date","end date"].includes(lc)) {
+                    cellText = formatDateFromSerialOrDate(rawVal);
+                } else if (["cost","include","exclude"].includes(lc)) {
+                    cellText = formatCurrency(rawVal);
+                } else {
+                    if (rawVal instanceof Date) cellText = formatDateFromSerialOrDate(rawVal);
+                    else cellText = String(rawVal);
+                }
+                const td = document.createElement('td');
+                td.textContent = cellText;
+                applyStyleToTd(td, colName, cellText);
+                row.appendChild(td);
+            }
+            frag.appendChild(row);
+        });
+        tbody.appendChild(frag);
+        tableEl.appendChild(tbody);
+    }
+
+    function sortTableByIndex(tableEl, colIndex, thElement) {
+        if (!tableEl || !tableEl.tBodies[0]) return;
+        const tbody = tableEl.tBodies[0];
+        const asc = thElement.dataset.sorted !== 'asc';
+        clearSortIndicators(tableEl);
+        thElement.dataset.sorted = asc ? 'asc' : 'desc';
+        thElement.classList.add(asc ? 'sort-asc' : 'sort-desc');
+
+        const rows = Array.from(tbody.rows);
+        rows.sort((a, b) => {
+            const aText = (a.cells[colIndex] && a.cells[colIndex].textContent) ? a.cells[colIndex].textContent : '';
+            const bText = (b.cells[colIndex] && b.cells[colIndex].textContent) ? b.cells[colIndex].textContent : '';
+            const va = parseValueForSort(aText);
+            const vb = parseValueForSort(bText);
+
+            if (typeof va === 'number' && typeof vb === 'number') return asc ? (va - vb) : (vb - va);
+            if (typeof va === 'number') return asc ? -1 : 1;
+            if (typeof vb === 'number') return asc ? 1 : -1;
+            return asc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+        });
+        rows.forEach(r => tbody.appendChild(r));
+    }
+
+    function getIndex(headers, keyword) {
+        keyword = (keyword || '').toLowerCase();
+        return headers.findIndex(h => (h || '').toLowerCase().includes(keyword));
+    }
+
+    /*********************
+     * Tab switching (keamanan: juga expose showMenu)
+     *********************/
+    const tabWork = document.getElementById('tab-work');
+    const tabDetail = document.getElementById('tab-detail');
+    const tabExt = document.getElementById('tab-ext');
+    const panelWork = document.getElementById('panel-work');
+    const panelDetail = document.getElementById('panel-detail');
+    const panelExt = document.getElementById('panel-ext');
+
+    function showMenu(id) {
+      // support either id = 'menu-key' or 'tab element'
+      tabWork.classList.remove('active'); tabDetail.classList.remove('active'); tabExt.classList.remove('active');
+      panelWork.classList.remove('active'); panelDetail.classList.remove('active'); panelExt.classList.remove('active');
+
+      if (id === 'work' || id === 'tab-work' || id === tabWork) { tabWork.classList.add('active'); panelWork.classList.add('active'); }
+      else if (id === 'detail' || id === 'tab-detail' || id === tabDetail) { tabDetail.classList.add('active'); panelDetail.classList.add('active'); }
+      else { tabExt.classList.add('active'); panelExt.classList.add('active'); }
+    }
+
+    tabWork.addEventListener('click', () => { showMenu('work'); });
+    tabDetail.addEventListener('click', () => { showMenu('detail'); });
+    tabExt.addEventListener('click', () => { showMenu('ext'); });
+
+    /*********************
+     * Menu 1 - Work Order
+     *********************/
+    let wHeaders = [];
+    const wTable = document.getElementById('w-table');
+
+    document.getElementById('w-upload').addEventListener('change', function(e){
+        const f = e.target.files[0]; if (!f) return;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            const data = new Uint8Array(ev.target.result);
+            const wb = XLSX.read(data, { type: 'array' });
+            const sheet = wb.Sheets[wb.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(sheet, { header:1, raw:true });
+            if (!json || json.length === 0) { alert('No data'); return; }
+            wHeaders = json[0].map(h => h === null || h === undefined ? '' : String(h).trim());
+            const rows = json.slice(1);
+            buildTableFromJson(wTable, wHeaders, rows);
+            applyWorkFilters(); // apply filters if any
+        };
+        reader.readAsArrayBuffer(f);
+    });
+
+    function applyWorkFilters() {
+        const fRoom = (document.getElementById('w-filter-room').value || '').toLowerCase();
+        const fOrder = (document.getElementById('w-filter-order').value || '').toLowerCase();
+        const fMat = (document.getElementById('w-filter-mat').value || '').toLowerCase();
+        const fSection = (document.getElementById('w-filter-section').value || '').toLowerCase();
+        const fCph = (document.getElementById('w-filter-cph').value || '').toLowerCase();
+        const fStatus = (document.getElementById('w-filter-status').value || '').toLowerCase();
+        if (!wTable.tBodies[0]) return;
+        const rows = Array.from(wTable.tBodies[0].rows);
+
+        const idxRoom = getIndex(wHeaders, 'room');
+        const idxOrder = getIndex(wHeaders, 'order');
+        const idxMat = getIndex(wHeaders, 'mat');
+        const idxSection = getIndex(wHeaders, 'section');
+        const idxCph = getIndex(wHeaders, 'cph');
+        const idxStatus = getIndex(wHeaders, 'status');
+
+        rows.forEach(row => {
+            let show = true;
+            if (fRoom && idxRoom >= 0) {
+                const txt = (row.cells[idxRoom] && row.cells[idxRoom].textContent) ? row.cells[idxRoom].textContent.toLowerCase() : '';
+                if (!txt.includes(fRoom)) show = false;
+            }
+            if (show && fOrder && idxOrder >= 0) {
+                const txt = (row.cells[idxOrder] && row.cells[idxOrder].textContent) ? row.cells[idxOrder].textContent.toLowerCase() : '';
+                if (!txt.includes(fOrder)) show = false;
+            }
+            if (show && fMat && idxMat >= 0) {
+                const txt = (row.cells[idxMat] && row.cells[idxMat].textContent) ? row.cells[idxMat].textContent.toLowerCase() : '';
+                if (!txt.includes(fMat)) show = false;
+            }
+            if (show && fSection && idxSection >= 0) {
+                const txt = (row.cells[idxSection] && row.cells[idxSection].textContent) ? row.cells[idxSection].textContent.toLowerCase() : '';
+                if (!txt.includes(fSection)) show = false;
+            }
+            if (show && fCph && idxCph >= 0) {
+                const txt = (row.cells[idxCph] && row.cells[idxCph].textContent) ? row.cells[idxCph].textContent.toLowerCase() : '';
+                if (!txt.includes(fCph)) show = false;
+            }
+            if (show && fStatus && idxStatus >= 0) {
+                const txt = (row.cells[idxStatus] && row.cells[idxStatus].textContent) ? row.cells[idxStatus].textContent.toLowerCase() : '';
+                if (!txt.includes(fStatus)) show = false;
+            }
+            row.style.display = show ? '' : 'none';
+        });
+    }
+
+    const debouncedApplyWorkFilters = debounce(applyWorkFilters, 120);
+    document.querySelectorAll("#panel-work .filter-container input[type=text]").forEach(inp => inp.addEventListener('input', debouncedApplyWorkFilters));
+    document.getElementById('w-clear').addEventListener('click', () => {
+        document.querySelectorAll("#panel-work .filter-container input[type=text]").forEach(i => i.value = '');
+        applyWorkFilters();
+    });
+
+    /*********************
+     * Menu 2 - Detail Part
+     *********************/
+    let dHeaders = [];
+    const dTable = document.getElementById('d-table');
+
+    document.getElementById('d-upload').addEventListener('change', function(e){
+        const f = e.target.files[0]; if (!f) return;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            const data = new Uint8Array(ev.target.result);
+            const wb = XLSX.read(data, { type: 'array' });
+            const sheet = wb.Sheets[wb.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(sheet, { header:1, raw:true });
+            if (!json || json.length === 0) { alert('No data'); return; }
+            dHeaders = json[0].map(h => h === null || h === undefined ? '' : String(h).trim());
+            const rows = json.slice(1);
+            buildTableFromJson(dTable, dHeaders, rows);
+            applyDetailFilters(); // apply filters if any
+        };
+        reader.readAsArrayBuffer(f);
+    });
+
+    function applyDetailFilters() {
+        const fOrder = (document.getElementById('d-filter-order').value || '').toLowerCase();
+        const fMatNum = (document.getElementById('d-filter-matnum').value || '').toLowerCase();
+        const fMatDesc = (document.getElementById('d-filter-matdesc').value || '').toLowerCase();
+        if (!dTable.tBodies[0]) return;
+        const rows = Array.from(dTable.tBodies[0].rows);
+
+        const idxOrder = getIndex(dHeaders, 'order'); // order number column
+        const idxMatNum = (getIndex(dHeaders, 'material') !== -1) ? getIndex(dHeaders, 'material') : getIndex(dHeaders, 'material number'); // try 'material' or 'material number'
+        const idxMatDesc = (getIndex(dHeaders, 'description') !== -1) ? getIndex(dHeaders, 'description') : getIndex(dHeaders, 'material description');
+
+        rows.forEach(row => {
+            let show = true;
+            if (fOrder && idxOrder >= 0) {
+                const txt = (row.cells[idxOrder] && row.cells[idxOrder].textContent) ? row.cells[idxOrder].textContent.toLowerCase() : '';
+                if (!txt.includes(fOrder)) show = false;
+            } else if (fOrder && idxOrder < 0) {
+                // fallback: row contains
+                if (!row.textContent.toLowerCase().includes(fOrder)) show = false;
+            }
+
+            if (show && fMatNum) {
+                if (idxMatNum >= 0) {
+                    const txt = (row.cells[idxMatNum] && row.cells[idxMatNum].textContent) ? row.cells[idxMatNum].textContent.toLowerCase() : '';
+                    if (!txt.includes(fMatNum)) show = false;
+                } else {
+                    if (!row.textContent.toLowerCase().includes(fMatNum)) show = false;
+                }
+            }
+
+            if (show && fMatDesc) {
+                if (idxMatDesc >= 0) {
+                    const txt = (row.cells[idxMatDesc] && row.cells[idxMatDesc].textContent) ? row.cells[idxMatDesc].textContent.toLowerCase() : '';
+                    if (!txt.includes(fMatDesc)) show = false;
+                } else {
+                    if (!row.textContent.toLowerCase().includes(fMatDesc)) show = false;
+                }
+            }
+
+            row.style.display = show ? '' : 'none';
+        });
+    }
+
+    const debouncedApplyDetailFilters = debounce(applyDetailFilters, 120);
+    document.querySelectorAll("#panel-detail .filter-container input[type=text]").forEach(inp => inp.addEventListener('input', debouncedApplyDetailFilters));
+    document.getElementById('d-clear').addEventListener('click', () => {
+        document.querySelectorAll("#panel-detail .filter-container input[type=text]").forEach(i => i.value = '');
+        applyDetailFilters();
+    });
+
+    /*********************
+     * Menu 3 - External Job
+     *********************/
+    let eHeaders = [];
+    const eTable = document.getElementById('e-table');
+
+    document.getElementById('e-upload').addEventListener('change', function(e){
+        const f = e.target.files[0]; if (!f) return;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            const data = new Uint8Array(ev.target.result);
+            const wb = XLSX.read(data, { type: 'array' });
+            const sheet = wb.Sheets[wb.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(sheet, { header:1, raw:true });
+            if (!json || json.length === 0) { alert('No data'); return; }
+            eHeaders = json[0].map(h => h === null || h === undefined ? '' : String(h).trim());
+            const rows = json.slice(1);
+            buildTableFromJson(eTable, eHeaders, rows);
+            applyExtFilters();
+        };
+        reader.readAsArrayBuffer(f);
+    });
+
+    function applyExtFilters() {
+        const fRoom = (document.getElementById('e-filter-room').value || '').toLowerCase();
+        const fOrder = (document.getElementById('e-filter-order').value || '').toLowerCase();
+        const fAct = (document.getElementById('e-filter-activity').value || '').toLowerCase();
+        const fDesc = (document.getElementById('e-filter-desc').value || '').toLowerCase();
+        if (!eTable.tBodies[0]) return;
+        const rows = Array.from(eTable.tBodies[0].rows);
+
+        const idxRoom = getIndex(eHeaders, 'room');
+        const idxOrder = getIndex(eHeaders, 'order');
+        const idxAct = getIndex(eHeaders, 'activity');
+        const idxDesc = getIndex(eHeaders, 'description');
+
+        rows.forEach(row => {
+            let show = true;
+            if (fRoom && idxRoom >= 0) {
+                const txt = (row.cells[idxRoom] && row.cells[idxRoom].textContent) ? row.cells[idxRoom].textContent.toLowerCase() : '';
+                if (!txt.includes(fRoom)) show = false;
+            }
+            if (show && fOrder && idxOrder >= 0) {
+                const txt = (row.cells[idxOrder] && row.cells[idxOrder].textContent) ? row.cells[idxOrder].textContent.toLowerCase() : '';
+                if (!txt.includes(fOrder)) show = false;
+            }
+            if (show && fAct && idxAct >= 0) {
+                const txt = (row.cells[idxAct] && row.cells[idxAct].textContent) ? row.cells[idxAct].textContent.toLowerCase() : '';
+                if (!txt.includes(fAct)) show = false;
+            }
+            if (show && fDesc && idxDesc >= 0) {
+                const txt = (row.cells[idxDesc] && row.cells[idxDesc].textContent) ? row.cells[idxDesc].textContent.toLowerCase() : '';
+                if (!txt.includes(fDesc)) show = false;
+            }
+            row.style.display = show ? '' : 'none';
+        });
+    }
+
+    const debouncedApplyExtFilters = debounce(applyExtFilters, 120);
+    document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(inp => inp.addEventListener('input', debouncedApplyExtFilters));
+    document.getElementById('e-clear').addEventListener('click', () => {
+        document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(i => i.value = '');
+        applyExtFilters();
+    });
+    </script>
 </body>
 </html>
