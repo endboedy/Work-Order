@@ -292,13 +292,7 @@ function applyExtFilters(){
 document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(inp=>inp.addEventListener('input',debounce(applyExtFilters,120)));
 document.getElementById('e-clear').addEventListener('click',()=>{document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(i=>i.value=''); applyExtFilters();});
 
-// ----------------- Menu 4: List WO Monthly -----------------
-const mTable=document.getElementById('m-table');
-function buildMonthlyTable(){
-    if(!wTable.tBodies[0]) return;
-    const filterMonth=(document.getElementById('m-filter-month').value||'').toLowerCase();
-
-  <!-- PANEL Menu 4 -->
+<!-- PANEL Menu 4 -->
 <div class="panel" id="panel-monthly">
     <div class="filter-container">
         <label>Month: <input type="text" id="m-filter-month" placeholder="filter Month"></label>
@@ -316,8 +310,6 @@ function buildMonthlyTable(){
 </div>
 
 <script>
-
-
 // ----------------- Menu 4: List WO Monthly -----------------
 const mTable = document.getElementById('m-table');
 
@@ -365,12 +357,12 @@ function buildMonthlyTable(){
     buildTableFromJson(mTable, headers, rows);
 }
 
-// event listener untuk semua filter
+// Event listener untuk semua filter
 document.querySelectorAll("#panel-monthly .filter-container input[type=text]").forEach(inp=>{
     inp.addEventListener('input', debounce(buildMonthlyTable,120));
 });
 
-// tombol clear semua filter
+// Tombol clear semua filter
 document.getElementById('m-clear').addEventListener('click',()=>{
     document.querySelectorAll("#panel-monthly .filter-container input[type=text]").forEach(i=>i.value='');
     buildMonthlyTable();
