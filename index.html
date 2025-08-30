@@ -298,13 +298,30 @@ function buildMonthlyTable(){
     if(!wTable.tBodies[0]) return;
     const filterMonth=(document.getElementById('m-filter-month').value||'').toLowerCase();
   
+<!-- PANEL Menu 4 -->
+<div class="panel" id="panel-monthly">
+    <div class="filter-container">
+        <label>Month: <input type="text" id="m-filter-month" placeholder="filter Month"></label>
+        <label>Room: <input type="text" id="m-filter-room" placeholder="filter Room"></label>
+        <label>User Status: <input type="text" id="m-filter-statususer" placeholder="filter User Status"></label>
+        <label>MAT: <input type="text" id="m-filter-mat" placeholder="filter MAT"></label>
+        <label>CPH: <input type="text" id="m-filter-cph" placeholder="filter CPH"></label>
+        <label>Section: <input type="text" id="m-filter-section" placeholder="filter Section"></label>
+        <label>Status AMT: <input type="text" id="m-filter-statusamt" placeholder="filter Status AMT"></label>
+        <div class="controls">
+            <button class="btn" id="m-clear">Clear filters</button>
+        </div>
+    </div>
+    <table id="m-table" class="small"></table>
+</div>
+
+<script>
 // ----------------- Menu 4: List WO Monthly -----------------
 const mTable = document.getElementById('m-table');
 
 function buildMonthlyTable(){
     if(!wTable.tBodies[0]) return;
 
-    // ambil semua filter
     const fMonth      = (document.getElementById('m-filter-month').value||'').toLowerCase();
     const fRoom       = (document.getElementById('m-filter-room').value||'').toLowerCase();
     const fUserStatus = (document.getElementById('m-filter-statususer').value||'').toLowerCase();
@@ -346,17 +363,16 @@ function buildMonthlyTable(){
     buildTableFromJson(mTable, headers, rows);
 }
 
-// event listener untuk filter
-document.querySelectorAll("#panel-monthly .filter-container input[type=text]").forEach(inp => {
-    inp.addEventListener('input', debounce(buildMonthlyTable, 120));
+// event listener untuk semua filter
+document.querySelectorAll("#panel-monthly .filter-container input[type=text]").forEach(inp=>{
+    inp.addEventListener('input', debounce(buildMonthlyTable,120));
 });
 
 // tombol clear semua filter
-document.getElementById('m-clear').addEventListener('click', () => {
-    document.querySelectorAll("#panel-monthly .filter-container input[type=text]").forEach(i => i.value='');
+document.getElementById('m-clear').addEventListener('click',()=>{
+    document.querySelectorAll("#panel-monthly .filter-container input[type=text]").forEach(i=>i.value='');
     buildMonthlyTable();
 });
-
 </script>
 </body>
 </html>
