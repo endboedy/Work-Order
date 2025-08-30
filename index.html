@@ -31,18 +31,17 @@
     <div class="tabs">
         <div class="tab active" id="tab-work">Work Order</div>
         <div class="tab" id="tab-detail">Detail Part</div>
-        <div class="tab" id="tab-ext">External Job</div>
     </div>
 
     <!-- PANEL: Work Order (Menu 1) -->
     <div class="panel active" id="panel-work">
         <div class="filter-container">
-            <label>Room: <input type="text" id="w-filter-room"></label>
-            <label>Order: <input type="text" id="w-filter-order"></label>
-            <label>MAT: <input type="text" id="w-filter-mat"></label>
-            <label>Section: <input type="text" id="w-filter-section"></label>
-            <label>CPH: <input type="text" id="w-filter-cph"></label>
-            <label>Status: <input type="text" id="w-filter-status"></label>
+            <label>Room: <input type="text" id="w-filter-room" placeholder="filter Room"></label>
+            <label>Order: <input type="text" id="w-filter-order" placeholder="filter Order"></label>
+            <label>MAT: <input type="text" id="w-filter-mat" placeholder="filter MAT"></label>
+            <label>Section: <input type="text" id="w-filter-section" placeholder="filter Section"></label>
+            <label>CPH: <input type="text" id="w-filter-cph" placeholder="filter CPH"></label>
+            <label>Status: <input type="text" id="w-filter-status" placeholder="filter Status"></label>
             <div class="controls">
                 <input type="file" id="w-upload" accept=".xlsx" />
                 <button class="btn" id="w-clear">Clear filters</button>
@@ -54,9 +53,9 @@
     <!-- PANEL: Detail Part (Menu 2) -->
     <div class="panel" id="panel-detail">
         <div class="filter-container">
-            <label>Order: <input type="text" id="d-filter-order"></label>
-            <label>Material Number: <input type="text" id="d-filter-matnum"></label>
-            <label>Material Description: <input type="text" id="d-filter-matdesc"></label>
+            <label>Order: <input type="text" id="d-filter-order" placeholder="filter Order"></label>
+            <label>Material Number: <input type="text" id="d-filter-matnum" placeholder="filter Material Number"></label>
+            <label>Material Description: <input type="text" id="d-filter-matdesc" placeholder="filter Material Description"></label>
             <div class="controls">
                 <input type="file" id="d-upload" accept=".xlsx" />
                 <button class="btn" id="d-clear">Clear filters</button>
@@ -65,25 +64,8 @@
         <table id="d-table" class="small"></table>
     </div>
 
-    <!-- PANEL: External Job (Menu 3) -->
-    <div class="panel" id="panel-ext">
-        <div class="filter-container">
-            <label>Room: <input type="text" id="e-filter-room"></label>
-            <label>Order: <input type="text" id="e-filter-order"></label>
-            <label>Activity: <input type="text" id="e-filter-activity"></label>
-            <label>Description: <input type="text" id="e-filter-desc"></label>
-            <div class="controls">
-                <input type="file" id="e-upload" accept=".xlsx" />
-                <button class="btn" id="e-clear">Clear filters</button>
-            </div>
-        </div>
-        <table id="e-table" class="small"></table>
-    </div>
-
     <script>
-    /*********************
-     * HELPERS
-     *********************/
+    // ----------------- Shared helpers -----------------
     function formatDateFromSerialOrDate(v) {
         if (v === null || v === undefined || v === '') return "";
         const options = { day: '2-digit', month: 'short', year: 'numeric' };
@@ -145,6 +127,7 @@
         });
     }
 
+    // debounce
     function debounce(fn, wait) {
         let t;
         return function(...args) {
@@ -153,9 +136,26 @@
         };
     }
 
-    /*********************
-     * DOM-safe table builder & sorter
-     *********************/
+    // ----------------- tab switching -----------------
+    const tabWork = document.getElementById('tab-work');
+    const tabDetail = document.getElementById('tab-detail');
+    const panelWork = document.getElementById('panel-work');
+    const panelDetail = document.getElementById('panel-detail');
+
+    tabWork.addEventListener('click', () => {
+        tabWork.classList.add('active');
+        tabDetail.classList.remove('active');
+        panelWork.classList.add('active');
+        panelDetail.classList.remove('active');
+    });
+    tabDetail.addEventListener('click', () => {
+        tabDetail.classList.add('active');
+        tabWork.classList.remove('active');
+        panelDetail.classList.add('active');
+        panelWork.classList.remove('active');
+    });
+
+    // ----------------- generic table build using DOM (safe) -----------------
     function buildTableFromJson(tableEl, headers, rows) {
         // clear
         while (tableEl.firstChild) tableEl.removeChild(tableEl.firstChild);
@@ -224,38 +224,7 @@
         rows.forEach(r => tbody.appendChild(r));
     }
 
-    function getIndex(headers, keyword) {
-        keyword = (keyword || '').toLowerCase();
-        return headers.findIndex(h => (h || '').toLowerCase().includes(keyword));
-    }
-
-    /*********************
-     * Tab switching (keamanan: juga expose showMenu)
-     *********************/
-    const tabWork = document.getElementById('tab-work');
-    const tabDetail = document.getElementById('tab-detail');
-    const tabExt = document.getElementById('tab-ext');
-    const panelWork = document.getElementById('panel-work');
-    const panelDetail = document.getElementById('panel-detail');
-    const panelExt = document.getElementById('panel-ext');
-
-    function showMenu(id) {
-      // support either id = 'menu-key' or 'tab element'
-      tabWork.classList.remove('active'); tabDetail.classList.remove('active'); tabExt.classList.remove('active');
-      panelWork.classList.remove('active'); panelDetail.classList.remove('active'); panelExt.classList.remove('active');
-
-      if (id === 'work' || id === 'tab-work' || id === tabWork) { tabWork.classList.add('active'); panelWork.classList.add('active'); }
-      else if (id === 'detail' || id === 'tab-detail' || id === tabDetail) { tabDetail.classList.add('active'); panelDetail.classList.add('active'); }
-      else { tabExt.classList.add('active'); panelExt.classList.add('active'); }
-    }
-
-    tabWork.addEventListener('click', () => { showMenu('work'); });
-    tabDetail.addEventListener('click', () => { showMenu('detail'); });
-    tabExt.addEventListener('click', () => { showMenu('ext'); });
-
-    /*********************
-     * Menu 1 - Work Order
-     *********************/
+    // ----------------- Work Order (Menu 1) logic -----------------
     let wHeaders = [];
     const wTable = document.getElementById('w-table');
 
@@ -275,6 +244,11 @@
         };
         reader.readAsArrayBuffer(f);
     });
+
+    function getIndex(headers, keyword) {
+        keyword = (keyword || '').toLowerCase();
+        return headers.findIndex(h => (h || '').toLowerCase().includes(keyword));
+    }
 
     function applyWorkFilters() {
         const fRoom = (document.getElementById('w-filter-room').value || '').toLowerCase();
@@ -330,9 +304,7 @@
         applyWorkFilters();
     });
 
-    /*********************
-     * Menu 2 - Detail Part
-     *********************/
+    // ----------------- Detail Part (Menu 2) logic -----------------
     let dHeaders = [];
     const dTable = document.getElementById('d-table');
 
@@ -361,8 +333,8 @@
         const rows = Array.from(dTable.tBodies[0].rows);
 
         const idxOrder = getIndex(dHeaders, 'order'); // order number column
-        const idxMatNum = (getIndex(dHeaders, 'material') !== -1) ? getIndex(dHeaders, 'material') : getIndex(dHeaders, 'material number'); // try 'material' or 'material number'
-        const idxMatDesc = (getIndex(dHeaders, 'description') !== -1) ? getIndex(dHeaders, 'description') : getIndex(dHeaders, 'material description');
+        const idxMatNum = getIndex(dHeaders, 'material') !== -1 ? getIndex(dHeaders, 'material') : getIndex(dHeaders, 'material number'); // try 'material' or 'material number'
+        const idxMatDesc = getIndex(dHeaders, 'description') !== -1 ? getIndex(dHeaders, 'description') : getIndex(dHeaders, 'material description');
 
         rows.forEach(row => {
             let show = true;
@@ -403,154 +375,7 @@
         applyDetailFilters();
     });
 
-<!-- ================= MENU 3: External Job ================= -->
-<div id="panel-ext" class="panel">
-  <h2>Menu 3 - External Job</h2>
-
-  <!-- Upload -->
-  <div class="upload-container">
-    <input type="file" id="e-upload" accept=".xlsx,.xls" />
-  </div>
-
-  <!-- Filter -->
-  <div class="filter-container">
-    <input type="text" id="e-filter-room" placeholder="Filter Room">
-    <input type="text" id="e-filter-order" placeholder="Filter Order Number">
-    <input type="text" id="e-filter-activity" placeholder="Filter Activity Type">
-    <input type="text" id="e-filter-desc" placeholder="Filter Description">
-    <input type="text" id="e-filter-podoc" placeholder="Filter Purchase Document Number">
-    <input type="text" id="e-filter-prnum" placeholder="Filter Purchase Requisition Number">
-    <button id="e-clear">Clear</button>
-  </div>
-
-  <!-- Table -->
-  <div class="table-container">
-    <table id="e-table" border="1" cellspacing="0" cellpadding="5">
-      <thead></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-</div>
-
-<script>
-/*********************
- * Menu 3 - External Job
- *********************/
-const eTable = document.getElementById('e-table');
-let eHeaders = [];
-let eRows = [];
-
-// Kolom yang akan ditampilkan di tabel
-const extCols = [
-  "Room","Manufacturer model number","Order Number","Maintenance activity type",
-  "Field displaying user status","Description","Aging WO","Net Price in PO USD",
-  "Cost Element","Service number","Service Short Text","Name",
-  "Purchase Requisition Number","Purchasing Document Number","Entry Sheet Number"
-];
-
-// Upload Excel
-document.getElementById('e-upload').addEventListener('change', function(e){
-  const f = e.target.files[0]; if (!f) return;
-  const reader = new FileReader();
-  reader.onload = function(ev) {
-    const data = new Uint8Array(ev.target.result);
-    const wb = XLSX.read(data, { type: 'array' });
-    const sheet = wb.Sheets[wb.SheetNames[0]];
-    const json = XLSX.utils.sheet_to_json(sheet, { header:1, raw:true });
-    if (!json || json.length === 0) { alert('No data'); return; }
-
-    // ambil header dari file excel
-    const allHeaders = json[0].map(h => h ? String(h).trim() : "");
-    // filter hanya header yang kita mau
-    eHeaders = extCols.filter(c => allHeaders.includes(c));
-
-    // ambil data baris
-    eRows = json.slice(1).map(row => {
-      return eHeaders.map(h => {
-        const idx = allHeaders.indexOf(h);
-        return idx >= 0 ? row[idx] : "";
-      });
-    });
-
-    buildETable();
-    applyExtFilters();
-  };
-  reader.readAsArrayBuffer(f);
-});
-
-// Build tabel dari eHeaders & eRows
-function buildETable() {
-  const thead = eTable.querySelector('thead');
-  const tbody = eTable.querySelector('tbody');
-  thead.innerHTML = "";
-  tbody.innerHTML = "";
-
-  // header
-  const htr = document.createElement("tr");
-  eHeaders.forEach(h => {
-    const th = document.createElement("th");
-    th.textContent = h;
-    htr.appendChild(th);
-  });
-  thead.appendChild(htr);
-
-  // isi
-  eRows.forEach(r => {
-    const tr = document.createElement("tr");
-    r.forEach(val => {
-      const td = document.createElement("td");
-      td.textContent = val;
-      tr.appendChild(td);
-    });
-    tbody.appendChild(tr);
-  });
-}
-
-// Get index kolom by nama
-function getIndexExt(name) {
-  return eHeaders.findIndex(h => h.toLowerCase() === name.toLowerCase());
-}
-
-// Filter
-function applyExtFilters() {
-  if (!eTable.tBodies[0]) return;
-  const rows = Array.from(eTable.tBodies[0].rows);
-
-  const fRoom   = document.getElementById('e-filter-room').value.toLowerCase();
-  const fOrder  = document.getElementById('e-filter-order').value.toLowerCase();
-  const fAct    = document.getElementById('e-filter-activity').value.toLowerCase();
-  const fDesc   = document.getElementById('e-filter-desc').value.toLowerCase();
-  const fPODoc  = document.getElementById('e-filter-podoc').value.toLowerCase();
-  const fPRNum  = document.getElementById('e-filter-prnum').value.toLowerCase();
-
-  const idxRoom  = getIndexExt("Room");
-  const idxOrder = getIndexExt("Order Number");
-  const idxAct   = getIndexExt("Maintenance activity type");
-  const idxDesc  = getIndexExt("Description");
-  const idxPODoc = getIndexExt("Purchasing Document Number");
-  const idxPRNum = getIndexExt("Purchase Requisition Number");
-
-  rows.forEach(row => {
-    let show = true;
-    if (fRoom && idxRoom >= 0)  if (!row.cells[idxRoom].textContent.toLowerCase().includes(fRoom)) show = false;
-    if (show && fOrder && idxOrder >= 0) if (!row.cells[idxOrder].textContent.toLowerCase().includes(fOrder)) show = false;
-    if (show && fAct && idxAct >= 0) if (!row.cells[idxAct].textContent.toLowerCase().includes(fAct)) show = false;
-    if (show && fDesc && idxDesc >= 0) if (!row.cells[idxDesc].textContent.toLowerCase().includes(fDesc)) show = false;
-    if (show && fPODoc && idxPODoc >= 0) if (!row.cells[idxPODoc].textContent.toLowerCase().includes(fPODoc)) show = false;
-    if (show && fPRNum && idxPRNum >= 0) if (!row.cells[idxPRNum].textContent.toLowerCase().includes(fPRNum)) show = false;
-    row.style.display = show ? "" : "none";
-  });
-}
-
-// Clear filter
-const debouncedApplyExtFilters = debounce(applyExtFilters, 150);
-document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(inp => 
-  inp.addEventListener('input', debouncedApplyExtFilters)
-);
-document.getElementById('e-clear').addEventListener('click', () => {
-  document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(i => i.value = '');
-  applyExtFilters();
-});
-</script>
+    // ----------------- end -----------------
+    </script>
 </body>
 </html>
