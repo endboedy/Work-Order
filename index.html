@@ -403,30 +403,33 @@
         applyDetailFilters();
     });
 
-   /*********************
+<!-- ================= Menu 3 : External Job ================= -->
+<div id="panel-ext" class="menu-panel" style="display:none;">
+  <h3>External Job</h3>
+  <div class="filter-container">
+    Room: <input type="text" id="e-filter-room" placeholder="filter Room">
+    Order: <input type="text" id="e-filter-order" placeholder="filter Order">
+    Activity: <input type="text" id="e-filter-activity" placeholder="filter Activity">
+    Description: <input type="text" id="e-filter-desc" placeholder="filter Desc">
+    PR Number: <input type="text" id="e-filter-pr" placeholder="filter Purchase Req No">
+    PO Number: <input type="text" id="e-filter-po" placeholder="filter Purchasing Doc No">
+    <input type="file" id="e-upload" accept=".xlsx,.xls">
+    <button id="e-clear">Clear filters</button>
+  </div>
+  <div style="overflow-x:auto; max-height: 70vh;">
+    <table id="e-table" border="1" style="border-collapse:collapse; font-size:13px; width:95%; margin:auto;">
+      <thead><tr></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+/*********************
  * Menu 3 - External Job
  *********************/
 let eHeaders = [];
 const eTable = document.getElementById('e-table');
-
-// daftar kolom yang mau ditampilkan
-const allowedCols = [
-    "Room",
-    "Manufacturer model number",
-    "Order Number",
-    "Maintenance activity type",
-    "Field displaying user status",
-    "Description",
-    "Aging WO",
-    "Net Price in PO USD",
-    "Cost Element",
-    "Service number",
-    "Service Short Text",
-    "Name",
-    "Purchase Requisition Number",
-    "Purchasing Document Number",
-    "Entry Sheet Number"
-];
 
 document.getElementById('e-upload').addEventListener('change', function(e){
     const f = e.target.files[0]; if (!f) return;
@@ -437,40 +440,93 @@ document.getElementById('e-upload').addEventListener('change', function(e){
         const sheet = wb.Sheets[wb.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(sheet, { header:1, raw:true });
         if (!json || json.length === 0) { alert('No data'); return; }
-
-        // ambil header excel
-        const rawHeaders = json[0].map(h => h === null || h === undefined ? '' : String(h).trim());
-
-        // filter hanya kolom yang diizinkan
-        eHeaders = rawHeaders.filter(h => allowedCols.includes(h));
-
-        // filter isi row sesuai kolom
-        const rows = json.slice(1).map(r => {
-            return eHeaders.map(h => {
-                const idx = rawHeaders.indexOf(h);
-                return idx >= 0 ? r[idx] : "";
-            });
-        });
-
-        // build table
-        buildTableFromJson(eTable, eHeaders, rows);
+        eHeaders = json[0].map(h => h ? String(h).trim() : '');
+        const rows = json.slice(1);
+        buildTableFromJsonExternal(eTable, eHeaders, rows);
         applyExtFilters();
     };
     reader.readAsArrayBuffer(f);
 });
+
+function buildTableFromJsonExternal(table, headers, rows) {
+    const allowedHeaders = [
+      "Room","Manufacturer model number","Order Number","Maintenance activity type",
+      "Field displaying user status","Description","Aging WO","Net Price in PO USD",
+      "Cost Element","Service number","Service Short Text","Name",
+      "Purchase Requisition Number","Purchasing Document Number","Entry Sheet Number"
+    ];
+
+    const alignMap = {
+      "Room": "left",
+      "Manufacturer model number": "left",
+      "Order Number": "right",
+      "Maintenance activity type": "center",
+      "Field displaying user status": "center",
+      "Description": "left",
+      "Aging WO": "right",
+      "Net Price in PO USD": "right",
+      "Cost Element": "right",
+      "Service number": "right",
+      "Service Short Text": "left",
+      "Name": "left",
+      "Purchase Requisition Number": "right",
+      "Purchasing Document Number": "right",
+      "Entry Sheet Number": "right"
+    };
+
+    const thead = table.querySelector('thead');
+    const tbody = table.querySelector('tbody');
+    thead.innerHTML = ""; tbody.innerHTML = "";
+
+    // header
+    const trh = document.createElement("tr");
+    allowedHeaders.forEach(h => {
+      const th = document.createElement("th");
+      th.textContent = h;
+      th.style.textAlign = "center";
+      trh.appendChild(th);
+    });
+    thead.appendChild(trh);
+
+    // rows
+    rows.forEach(r => {
+      const tr = document.createElement("tr");
+      allowedHeaders.forEach(h => {
+        const idx = headers.findIndex(x => x.toLowerCase() === h.toLowerCase());
+        const td = document.createElement("td");
+        let val = (idx >= 0 && r[idx] !== undefined) ? r[idx] : "";
+        
+        if (h === "Net Price in PO USD" && val !== "") {
+          const num = parseFloat(val) || 0;
+          val = "$" + num.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+        }
+        
+        td.textContent = val;
+        td.style.textAlign = alignMap[h] || "left";
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+}
 
 function applyExtFilters() {
     const fRoom = (document.getElementById('e-filter-room').value || '').toLowerCase();
     const fOrder = (document.getElementById('e-filter-order').value || '').toLowerCase();
     const fAct = (document.getElementById('e-filter-activity').value || '').toLowerCase();
     const fDesc = (document.getElementById('e-filter-desc').value || '').toLowerCase();
+    const fPR = (document.getElementById('e-filter-pr').value || '').toLowerCase();
+    const fPO = (document.getElementById('e-filter-po').value || '').toLowerCase();
+
     if (!eTable.tBodies[0]) return;
     const rows = Array.from(eTable.tBodies[0].rows);
 
-    const idxRoom  = eHeaders.indexOf("Room");
-    const idxOrder = eHeaders.indexOf("Order Number");
-    const idxAct   = eHeaders.indexOf("Maintenance activity type");
-    const idxDesc  = eHeaders.indexOf("Description");
+    const headers = Array.from(eTable.tHead.rows[0].cells).map(th => th.textContent.toLowerCase());
+    const idxRoom = headers.indexOf('room');
+    const idxOrder = headers.indexOf('order number');
+    const idxAct = headers.indexOf('maintenance activity type');
+    const idxDesc = headers.indexOf('description');
+    const idxPR = headers.indexOf('purchase requisition number');
+    const idxPO = headers.indexOf('purchasing document number');
 
     rows.forEach(row => {
         let show = true;
@@ -490,18 +546,26 @@ function applyExtFilters() {
             const txt = row.cells[idxDesc]?.textContent.toLowerCase() || '';
             if (!txt.includes(fDesc)) show = false;
         }
+        if (show && fPR && idxPR >= 0) {
+            const txt = row.cells[idxPR]?.textContent.toLowerCase() || '';
+            if (!txt.includes(fPR)) show = false;
+        }
+        if (show && fPO && idxPO >= 0) {
+            const txt = row.cells[idxPO]?.textContent.toLowerCase() || '';
+            if (!txt.includes(fPO)) show = false;
+        }
         row.style.display = show ? '' : 'none';
     });
 }
 
 const debouncedApplyExtFilters = debounce(applyExtFilters, 120);
 document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(inp => 
-    inp.addEventListener('input', debouncedApplyExtFilters)
+  inp.addEventListener('input', debouncedApplyExtFilters)
 );
 document.getElementById('e-clear').addEventListener('click', () => {
-    document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(i => i.value = '');
-    applyExtFilters();
+  document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(i => i.value = '');
+  applyExtFilters();
 });
-    </script>
+</script>
 </body>
 </html>
