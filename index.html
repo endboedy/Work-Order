@@ -85,98 +85,45 @@ tbody tr:hover { background: #eef6ff; }
 <div class="panel" id="panel-monthly">
   <div class="filter-container">
     <label>Month: <input type="text" id="m-filter-month" placeholder="filter Month"></label>
-    <button class="btn" id="m-clear">Clear filter</button>
+    <label>Room: <input type="text" id="m-filter-room" placeholder="filter Room"></label>
+    <label>User Status: <input type="text" id="m-filter-statususer" placeholder="filter User Status"></label>
+    <label>MAT: <input type="text" id="m-filter-mat" placeholder="filter MAT"></label>
+    <label>CPH: <input type="text" id="m-filter-cph" placeholder="filter CPH"></label>
+    <label>Section: <input type="text" id="m-filter-section" placeholder="filter Section"></label>
+    <label>Status AMT: <input type="text" id="m-filter-statusamt" placeholder="filter Status AMT"></label>
+    <div class="controls">
+        <button class="btn" id="m-clear">Clear filters</button>
+    </div>
   </div>
   <table id="m-table" class="small"></table>
 </div>
 
 <script>
 // ----------------- Helpers -----------------
-function formatDateFromSerialOrDate(v) {
-    if(v===null||v===undefined||v==='') return "";
-    const options={day:'2-digit',month:'short',year:'numeric'};
-    if(v instanceof Date) return v.toLocaleDateString('en-US',options).replace(/ /g,'-');
-    if(typeof v==='number') return new Date(Math.round((v-25569)*86400*1000)).toLocaleDateString('en-US',options).replace(/ /g,'-');
-    const parsed=Date.parse(String(v));
-    if(!isNaN(parsed)) return new Date(parsed).toLocaleDateString('en-US',options).replace(/ /g,'-');
-    return String(v);
-}
-function formatCurrency(value){
-    if(value===null||value===undefined||value==='') return "";
-    const num=Number(String(value).replace(/[^0-9.-]/g,''));
-    return !isNaN(num)?("$"+Math.round(num).toLocaleString()):String(value);
-}
-function applyStyleToTd(td,colName,valText){
-    if(!td) return;
-    const col=String(colName||'').toLowerCase();
-    const val=(valText===null||valText===undefined)?'':String(valText).trim();
-    if(["order","created on","planning","target date","end date","cost","include","exclude"].includes(col)) td.style.textAlign="right";
-    else if(["user status","mat"].includes(col)) td.style.textAlign="center";
-    else td.style.textAlign="left";
-
-    if(col==="status part"){if(val==="Complete"){td.style.backgroundColor="green";td.style.color="white";}
-    else if(val==="Not Complete"){td.style.backgroundColor="red";td.style.color="white";}}
-    else if(col==="aging"){const aging=parseInt(val); if(!isNaN(aging)){td.style.backgroundColor=(aging<=30)?"green":"red"; td.style.color="white";}}
-    else if(col==="status amt"){if(val==="O"){td.style.backgroundColor="lightgray";td.style.color="black";}
-    else if(val==="YTS"){td.style.backgroundColor="green";td.style.color="white";}
-    else if(val==="IP"){td.style.backgroundColor="orange";td.style.color="red";}
-    else if(val==="C"){td.style.backgroundColor="black";td.style.color="white";}}
-}
-function parseValueForSort(text){const s=(text===null||text===undefined)?'':String(text).trim();if(s==='') return '';const num=Number(s.replace(/[^0-9.\-]/g,''));if(!isNaN(num)&&/[0-9]/.test(s)) return num; const parsed=Date.parse(s);if(!isNaN(parsed)) return parsed; return s.toLowerCase();}
-function clearSortIndicators(tableEl){if(!tableEl) return; tableEl.querySelectorAll('th').forEach(th=>{th.classList.remove('sort-asc','sort-desc'); delete th.dataset.sorted;});}
-function debounce(fn,wait){let t; return function(...args){clearTimeout(t); t=setTimeout(()=>fn.apply(this,args),wait);};}
-function getIndex(headers,keyword){keyword=(keyword||'').toLowerCase(); return headers.findIndex(h=>(h||'').toLowerCase().includes(keyword));}
+function formatDateFromSerialOrDate(v){if(v===null||v===undefined||v==='')return"";const o={day:'2-digit',month:'short',year:'numeric'};if(v instanceof Date)return v.toLocaleDateString('en-US',o).replace(/ /g,'-');if(typeof v==='number')return new Date(Math.round((v-25569)*86400*1000)).toLocaleDateString('en-US',o).replace(/ /g,'-');const p=Date.parse(String(v));if(!isNaN(p))return new Date(p).toLocaleDateString('en-US',o).replace(/ /g,'-');return String(v);}
+function formatCurrency(v){if(v===null||v===undefined||v==='')return"";const n=Number(String(v).replace(/[^0-9.-]/g,''));return !isNaN(n)?("$"+Math.round(n).toLocaleString()):String(v);}
+function applyStyleToTd(td,col,val){if(!td)return;const c=String(col||'').toLowerCase();const v=(val===null||val===undefined)?'':String(val).trim();if(["order","created on","planning","target date","end date","cost","include","exclude"].includes(c))td.style.textAlign="right";else if(["user status","mat"].includes(c))td.style.textAlign="center";else td.style.textAlign="left";if(c==="status part"){if(v==="Complete"){td.style.backgroundColor="green";td.style.color="white";}else if(v==="Not Complete"){td.style.backgroundColor="red";td.style.color="white";}}else if(c==="aging"){const a=parseInt(v);if(!isNaN(a)){td.style.backgroundColor=(a<=30)?"green":"red";td.style.color="white";}}else if(c==="status amt"){if(v==="O"){td.style.backgroundColor="lightgray";td.style.color="black";}else if(v==="YTS"){td.style.backgroundColor="green";td.style.color="white";}else if(v==="IP"){td.style.backgroundColor="orange";td.style.color="red";}else if(v==="C"){td.style.backgroundColor="black";td.style.color="white";}}}
+function parseValueForSort(t){const s=(t===null||t===undefined)?'':String(t).trim();if(s==='')return'';const n=Number(s.replace(/[^0-9.\-]/g,''));if(!isNaN(n)&&/[0-9]/.test(s))return n;const p=Date.parse(s);if(!isNaN(p))return p;return s.toLowerCase();}
+function clearSortIndicators(t){if(!t)return;t.querySelectorAll('th').forEach(th=>{th.classList.remove('sort-asc','sort-desc');delete th.dataset.sorted;});}
+function debounce(fn,wait){let t;return function(...a){clearTimeout(t);t=setTimeout(()=>fn.apply(this,a),wait);};}
+function getIndex(headers,keyword){keyword=(keyword||'').toLowerCase();return headers.findIndex(h=>(h||'').toLowerCase().includes(keyword));}
 
 // ----------------- Tab Switch -----------------
-const tabs=document.querySelectorAll('.tab');
-const panels=document.querySelectorAll('.panel');
-tabs.forEach(tab=>{tab.addEventListener('click',()=>{
-    tabs.forEach(t=>t.classList.remove('active'));
-    tab.classList.add('active');
-    panels.forEach(p=>p.classList.remove('active'));
-    const pid='panel-'+tab.id.split('-')[1];
-    document.getElementById(pid).classList.add('active');
-});});
+const tabs=document.querySelectorAll('.tab');const panels=document.querySelectorAll('.panel');
+tabs.forEach(tab=>{tab.addEventListener('click',()=>{tabs.forEach(t=>t.classList.remove('active'));tab.classList.add('active');panels.forEach(p=>p.classList.remove('active'));const pid='panel-'+tab.id.split('-')[1];document.getElementById(pid).classList.add('active');});});
 
 // ----------------- Build Table -----------------
 function buildTableFromJson(tableEl,headers,rows){
-    while(tableEl.firstChild) tableEl.removeChild(tableEl.firstChild);
+    while(tableEl.firstChild)tableEl.removeChild(tableEl.firstChild);
     const thead=document.createElement('thead'); const tr=document.createElement('tr');
-    headers.forEach((h,idx)=>{const th=document.createElement('th'); th.textContent=h; th.dataset.colIndex=idx; th.addEventListener('click',()=>sortTableByIndex(tableEl,idx,th)); tr.appendChild(th);});
+    headers.forEach((h,i)=>{const th=document.createElement('th'); th.textContent=h; th.dataset.colIndex=i; th.addEventListener('click',()=>sortTableByIndex(tableEl,i,th)); tr.appendChild(th);});
     thead.appendChild(tr); tableEl.appendChild(thead);
     const tbody=document.createElement('tbody'); const frag=document.createDocumentFragment();
-    rows.forEach(rowArr=>{
-        const row=document.createElement('tr');
-        for(let i=0;i<headers.length;i++){
-            const colName=headers[i]||'';
-            let rawVal=(rowArr&&rowArr[i]!==undefined&&rowArr[i]!==null)?rowArr[i]:'';
-            let cellText='';
-            const lc=colName.toLowerCase();
-            if(["created on","planning","target date","end date"].includes(lc)) cellText=formatDateFromSerialOrDate(rawVal);
-            else if(["cost","include","exclude"].includes(lc)) cellText=formatCurrency(rawVal);
-            else{if(rawVal instanceof Date) cellText=formatDateFromSerialOrDate(rawVal); else cellText=String(rawVal);}
-            const td=document.createElement('td'); td.textContent=cellText; applyStyleToTd(td,colName,cellText); row.appendChild(td);
-        }
-        frag.appendChild(row);
-    });
+    rows.forEach(r=>{const row=document.createElement('tr');for(let i=0;i<headers.length;i++){const col=headers[i]||'';let raw=(r&&r[i]!==undefined&&r[i]!==null)?r[i]:'';let txt='';const lc=col.toLowerCase(); if(["created on","planning","target date","end date"].includes(lc)) txt=formatDateFromSerialOrDate(raw);else if(["cost","include","exclude"].includes(lc)) txt=formatCurrency(raw);else{if(raw instanceof Date) txt=formatDateFromSerialOrDate(raw); else txt=String(raw);} const td=document.createElement('td'); td.textContent=txt; applyStyleToTd(td,col,txt); row.appendChild(td);}frag.appendChild(row);});
     tbody.appendChild(frag); tableEl.appendChild(tbody);
 }
-function sortTableByIndex(tableEl,colIndex,thElement){
-    if(!tableEl||!tableEl.tBodies[0]) return;
-    const tbody=tableEl.tBodies[0]; const asc=thElement.dataset.sorted!=='asc';
-    clearSortIndicators(tableEl); thElement.dataset.sorted=asc?'asc':'desc'; thElement.classList.add(asc?'sort-asc':'sort-desc');
-    const rows=Array.from(tbody.rows);
-    rows.sort((a,b)=>{
-        const aText=(a.cells[colIndex]&&a.cells[colIndex].textContent)?a.cells[colIndex].textContent:'';
-        const bText=(b.cells[colIndex]&&b.cells[colIndex].textContent)?b.cells[colIndex].textContent:'';
-        const va=parseValueForSort(aText); const vb=parseValueForSort(bText);
-        if(typeof va==='number'&&typeof vb==='number') return asc?(va-vb):(vb-va);
-        if(typeof va==='number') return asc?-1:1;
-        if(typeof vb==='number') return asc?1:-1;
-        return asc?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va));
-    });
-    rows.forEach(r=>tbody.appendChild(r));
-}
+function sortTableByIndex(tableEl,colIndex,thElement){if(!tableEl||!tableEl.tBodies[0])return;const tbody=tableEl.tBodies[0];const asc=thElement.dataset.sorted!=='asc';clearSortIndicators(tableEl);thElement.dataset.sorted=asc?'asc':'desc';thElement.classList.add(asc?'sort-asc':'sort-desc');const rows=Array.from(tbody.rows);rows.sort((a,b)=>{const aText=(a.cells[colIndex]&&a.cells[colIndex].textContent)?a.cells[colIndex].textContent:'';const bText=(b.cells[colIndex]&&b.cells[colIndex].textContent)?b.cells[colIndex].textContent:'';const va=parseValueForSort(aText); const vb=parseValueForSort(bText);if(typeof va==='number'&&typeof vb==='number')return asc?(va-vb):(vb-va);if(typeof va==='number')return asc?-1:1;if(typeof vb==='number')return asc?1:-1;return asc?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va));});rows.forEach(r=>tbody.appendChild(r));}
+
 
 // ----------------- Menu 1: Work Order -----------------
 let wHeaders=[]; const wTable=document.getElementById('w-table');
@@ -292,73 +239,40 @@ function applyExtFilters(){
 document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(inp=>inp.addEventListener('input',debounce(applyExtFilters,120)));
 document.getElementById('e-clear').addEventListener('click',()=>{document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(i=>i.value=''); applyExtFilters();});
 
-<!-- PANEL Menu 4 -->
-<div class="panel" id="panel-monthly">
-    <div class="filter-container">
-        <label>Month: <input type="text" id="m-filter-month" placeholder="filter Month"></label>
-        <label>Room: <input type="text" id="m-filter-room" placeholder="filter Room"></label>
-        <label>User Status: <input type="text" id="m-filter-statususer" placeholder="filter User Status"></label>
-        <label>MAT: <input type="text" id="m-filter-mat" placeholder="filter MAT"></label>
-        <label>CPH: <input type="text" id="m-filter-cph" placeholder="filter CPH"></label>
-        <label>Section: <input type="text" id="m-filter-section" placeholder="filter Section"></label>
-        <label>Status AMT: <input type="text" id="m-filter-statusamt" placeholder="filter Status AMT"></label>
-        <div class="controls">
-            <button class="btn" id="m-clear">Clear filters</button>
-        </div>
-    </div>
-    <table id="m-table" class="small"></table>
-</div>
-
-<script>
-// Menu 4: List WO Monthly (ambil data dari Menu 1)
+// ----------------- Menu 4: List WO Monthly -----------------
 (function(){
-    const mTable = document.getElementById('m-table');
-
-    function buildMonthlyTable() {
-        if(!wTable || !wTable.tBodies[0] || !wHeaders) return;
-
-        const fMonth      = (document.getElementById('m-filter-month').value||'').toLowerCase();
-        const fRoom       = (document.getElementById('m-filter-room').value||'').toLowerCase();
-        const fUserStatus = (document.getElementById('m-filter-statususer').value||'').toLowerCase();
-        const fMat        = (document.getElementById('m-filter-mat').value||'').toLowerCase();
-        const fCph        = (document.getElementById('m-filter-cph').value||'').toLowerCase();
-        const fSection    = (document.getElementById('m-filter-section').value||'').toLowerCase();
-        const fStatusAmt  = (document.getElementById('m-filter-statusamt').value||'').toLowerCase();
-
-        const headers = wHeaders.slice();
-        const rows = Array.from(wTable.tBodies[0].rows)
-            .filter(r => {
-                let show = true;
-                const idxMonth      = getIndex(headers,'month');
-                const idxRoom       = getIndex(headers,'room');
-                const idxUserStatus = getIndex(headers,'user status');
-                const idxMat        = getIndex(headers,'mat');
-                const idxCph        = getIndex(headers,'cph');
-                const idxSection    = getIndex(headers,'section');
-                const idxStatusAmt  = getIndex(headers,'status amt');
-
-                if(idxMonth>=0 && fMonth      && !(r.cells[idxMonth]?.textContent.toLowerCase()||'').includes(fMonth)) show=false;
-                if(idxRoom>=0 && fRoom        && !(r.cells[idxRoom]?.textContent.toLowerCase()||'').includes(fRoom)) show=false;
-                if(idxUserStatus>=0 && fUserStatus && !(r.cells[idxUserStatus]?.textContent.toLowerCase()||'').includes(fUserStatus)) show=false;
-                if(idxMat>=0 && fMat          && !(r.cells[idxMat]?.textContent.toLowerCase()||'').includes(fMat)) show=false;
-                if(idxCph>=0 && fCph          && !(r.cells[idxCph]?.textContent.toLowerCase()||'').includes(fCph)) show=false;
-                if(idxSection>=0 && fSection  && !(r.cells[idxSection]?.textContent.toLowerCase()||'').includes(fSection)) show=false;
-                if(idxStatusAmt>=0 && fStatusAmt && !(r.cells[idxStatusAmt]?.textContent.toLowerCase()||'').includes(fStatusAmt)) show=false;
-
+    const mTable=document.getElementById('m-table');
+    function buildMonthlyTable(){
+        if(!wTable||!wTable.tBodies[0]||!wHeaders)return;
+        const fMonth=(document.getElementById('m-filter-month').value||'').toLowerCase();
+        const fRoom=(document.getElementById('m-filter-room').value||'').toLowerCase();
+        const fUserStatus=(document.getElementById('m-filter-statususer').value||'').toLowerCase();
+        const fMat=(document.getElementById('m-filter-mat').value||'').toLowerCase();
+        const fCph=(document.getElementById('m-filter-cph').value||'').toLowerCase();
+        const fSection=(document.getElementById('m-filter-section').value||'').toLowerCase();
+        const fStatusAmt=(document.getElementById('m-filter-statusamt').value||'').toLowerCase();
+        const headers=wHeaders.slice();
+        const rows=Array.from(wTable.tBodies[0].rows)
+            .filter(r=>{
+                let show=true;
+                const idxMonth=getIndex(headers,'month'); const idxRoom=getIndex(headers,'room');
+                const idxUserStatus=getIndex(headers,'user status'); const idxMat=getIndex(headers,'mat');
+                const idxCph=getIndex(headers,'cph'); const idxSection=getIndex(headers,'section');
+                const idxStatusAmt=getIndex(headers,'status amt');
+                if(idxMonth>=0 && fMonth && !(r.cells[idxMonth]?.textContent.toLowerCase()||'').includes(fMonth))show=false;
+                if(idxRoom>=0 && fRoom && !(r.cells[idxRoom]?.textContent.toLowerCase()||'').includes(fRoom))show=false;
+                if(idxUserStatus>=0 && fUserStatus && !(r.cells[idxUserStatus]?.textContent.toLowerCase()||'').includes(fUserStatus))show=false;
+                if(idxMat>=0 && fMat && !(r.cells[idxMat]?.textContent.toLowerCase()||'').includes(fMat))show=false;
+                if(idxCph>=0 && fCph && !(r.cells[idxCph]?.textContent.toLowerCase()||'').includes(fCph))show=false;
+                if(idxSection>=0 && fSection && !(r.cells[idxSection]?.textContent.toLowerCase()||'').includes(fSection))show=false;
+                if(idxStatusAmt>=0 && fStatusAmt && !(r.cells[idxStatusAmt]?.textContent.toLowerCase()||'').includes(fStatusAmt))show=false;
                 return show;
             })
-            .map(r => Array.from(r.cells).map(c => c.textContent));
-
-        buildTableFromJson(mTable, headers, rows);
+            .map(r=>Array.from(r.cells).map(c=>c.textContent));
+        buildTableFromJson(mTable,headers,rows);
     }
-
-    // Event listener semua filter
-    document.querySelectorAll("#panel-monthly .filter-container input[type=text]").forEach(inp=>{
-        inp.addEventListener('input', debounce(buildMonthlyTable, 120));
-    });
-
-    // Tombol clear filter
-    document.getElementById('m-clear').addEventListener('click', ()=>{
+    document.querySelectorAll("#panel-monthly .filter-container input[type=text]").forEach(inp=>inp.addEventListener('input',debounce(buildMonthlyTable,120)));
+    document.getElementById('m-clear').addEventListener('click',()=>{
         document.querySelectorAll("#panel-monthly .filter-container input[type=text]").forEach(i=>i.value='');
         buildMonthlyTable();
     });
