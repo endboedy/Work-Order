@@ -403,70 +403,105 @@
         applyDetailFilters();
     });
 
-    /*********************
-     * Menu 3 - External Job
-     *********************/
-    let eHeaders = [];
-    const eTable = document.getElementById('e-table');
+   /*********************
+ * Menu 3 - External Job
+ *********************/
+let eHeaders = [];
+const eTable = document.getElementById('e-table');
 
-    document.getElementById('e-upload').addEventListener('change', function(e){
-        const f = e.target.files[0]; if (!f) return;
-        const reader = new FileReader();
-        reader.onload = function(ev) {
-            const data = new Uint8Array(ev.target.result);
-            const wb = XLSX.read(data, { type: 'array' });
-            const sheet = wb.Sheets[wb.SheetNames[0]];
-            const json = XLSX.utils.sheet_to_json(sheet, { header:1, raw:true });
-            if (!json || json.length === 0) { alert('No data'); return; }
-            eHeaders = json[0].map(h => h === null || h === undefined ? '' : String(h).trim());
-            const rows = json.slice(1);
-            buildTableFromJson(eTable, eHeaders, rows);
-            applyExtFilters();
-        };
-        reader.readAsArrayBuffer(f);
-    });
+// daftar kolom yang mau ditampilkan
+const allowedCols = [
+    "Room",
+    "Manufacturer model number",
+    "Order Number",
+    "Maintenance activity type",
+    "Field displaying user status",
+    "Description",
+    "Aging WO",
+    "Net Price in PO USD",
+    "Cost Element",
+    "Service number",
+    "Service Short Text",
+    "Name",
+    "Purchase Requisition Number",
+    "Purchasing Document Number",
+    "Entry Sheet Number"
+];
 
-    function applyExtFilters() {
-        const fRoom = (document.getElementById('e-filter-room').value || '').toLowerCase();
-        const fOrder = (document.getElementById('e-filter-order').value || '').toLowerCase();
-        const fAct = (document.getElementById('e-filter-activity').value || '').toLowerCase();
-        const fDesc = (document.getElementById('e-filter-desc').value || '').toLowerCase();
-        if (!eTable.tBodies[0]) return;
-        const rows = Array.from(eTable.tBodies[0].rows);
+document.getElementById('e-upload').addEventListener('change', function(e){
+    const f = e.target.files[0]; if (!f) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+        const data = new Uint8Array(ev.target.result);
+        const wb = XLSX.read(data, { type: 'array' });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet, { header:1, raw:true });
+        if (!json || json.length === 0) { alert('No data'); return; }
 
-        const idxRoom = getIndex(eHeaders, 'room');
-        const idxOrder = getIndex(eHeaders, 'order');
-        const idxAct = getIndex(eHeaders, 'activity');
-        const idxDesc = getIndex(eHeaders, 'description');
+        // ambil header excel
+        const rawHeaders = json[0].map(h => h === null || h === undefined ? '' : String(h).trim());
 
-        rows.forEach(row => {
-            let show = true;
-            if (fRoom && idxRoom >= 0) {
-                const txt = (row.cells[idxRoom] && row.cells[idxRoom].textContent) ? row.cells[idxRoom].textContent.toLowerCase() : '';
-                if (!txt.includes(fRoom)) show = false;
-            }
-            if (show && fOrder && idxOrder >= 0) {
-                const txt = (row.cells[idxOrder] && row.cells[idxOrder].textContent) ? row.cells[idxOrder].textContent.toLowerCase() : '';
-                if (!txt.includes(fOrder)) show = false;
-            }
-            if (show && fAct && idxAct >= 0) {
-                const txt = (row.cells[idxAct] && row.cells[idxAct].textContent) ? row.cells[idxAct].textContent.toLowerCase() : '';
-                if (!txt.includes(fAct)) show = false;
-            }
-            if (show && fDesc && idxDesc >= 0) {
-                const txt = (row.cells[idxDesc] && row.cells[idxDesc].textContent) ? row.cells[idxDesc].textContent.toLowerCase() : '';
-                if (!txt.includes(fDesc)) show = false;
-            }
-            row.style.display = show ? '' : 'none';
+        // filter hanya kolom yang diizinkan
+        eHeaders = rawHeaders.filter(h => allowedCols.includes(h));
+
+        // filter isi row sesuai kolom
+        const rows = json.slice(1).map(r => {
+            return eHeaders.map(h => {
+                const idx = rawHeaders.indexOf(h);
+                return idx >= 0 ? r[idx] : "";
+            });
         });
-    }
 
-    const debouncedApplyExtFilters = debounce(applyExtFilters, 120);
-    document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(inp => inp.addEventListener('input', debouncedApplyExtFilters));
-    document.getElementById('e-clear').addEventListener('click', () => {
-        document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(i => i.value = '');
+        // build table
+        buildTableFromJson(eTable, eHeaders, rows);
         applyExtFilters();
+    };
+    reader.readAsArrayBuffer(f);
+});
+
+function applyExtFilters() {
+    const fRoom = (document.getElementById('e-filter-room').value || '').toLowerCase();
+    const fOrder = (document.getElementById('e-filter-order').value || '').toLowerCase();
+    const fAct = (document.getElementById('e-filter-activity').value || '').toLowerCase();
+    const fDesc = (document.getElementById('e-filter-desc').value || '').toLowerCase();
+    if (!eTable.tBodies[0]) return;
+    const rows = Array.from(eTable.tBodies[0].rows);
+
+    const idxRoom  = eHeaders.indexOf("Room");
+    const idxOrder = eHeaders.indexOf("Order Number");
+    const idxAct   = eHeaders.indexOf("Maintenance activity type");
+    const idxDesc  = eHeaders.indexOf("Description");
+
+    rows.forEach(row => {
+        let show = true;
+        if (fRoom && idxRoom >= 0) {
+            const txt = row.cells[idxRoom]?.textContent.toLowerCase() || '';
+            if (!txt.includes(fRoom)) show = false;
+        }
+        if (show && fOrder && idxOrder >= 0) {
+            const txt = row.cells[idxOrder]?.textContent.toLowerCase() || '';
+            if (!txt.includes(fOrder)) show = false;
+        }
+        if (show && fAct && idxAct >= 0) {
+            const txt = row.cells[idxAct]?.textContent.toLowerCase() || '';
+            if (!txt.includes(fAct)) show = false;
+        }
+        if (show && fDesc && idxDesc >= 0) {
+            const txt = row.cells[idxDesc]?.textContent.toLowerCase() || '';
+            if (!txt.includes(fDesc)) show = false;
+        }
+        row.style.display = show ? '' : 'none';
     });
+}
+
+const debouncedApplyExtFilters = debounce(applyExtFilters, 120);
+document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(inp => 
+    inp.addEventListener('input', debouncedApplyExtFilters)
+);
+document.getElementById('e-clear').addEventListener('click', () => {
+    document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(i => i.value = '');
+    applyExtFilters();
+});
     </script>
 </body>
 </html>
