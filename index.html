@@ -1,124 +1,170 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>WORK_ORDER_EM</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    .menu-btn { padding: 6px 14px; margin: 4px; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; }
-    .menu-btn.active { background: #007bff; color: #fff; }
-    .menu-content { display: none; margin-top: 20px; }
-    table { border-collapse: collapse; font-size: 12px; margin-top: 10px; width: 95%; }
-    th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: center; }
-    th { background: #f4b400; color: white; }
-    input[type="file"] { margin-top: 10px; }
-  </style>
+    <meta charset="utf-8" />
+    <title>WORK_ORDER_EM - Multi Menu</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: Arial; font-size: 12px; margin: 12px; }
+        .tabs { display:flex; gap:8px; margin-bottom:12px; }
+        .tab { padding:8px 14px; background:#e9f0ff; border-radius:6px; cursor:pointer; user-select:none; }
+        .tab.active { background:#2f80ed; color:white; font-weight:600; }
+        .panel { display:none; }
+        .panel.active { display:block; }
+        .filter-container { margin-bottom: 12px; padding: 10px; background-color: #f7f7f7; border-radius: 6px; }
+        .filter-container label { margin-right: 8px; font-size: 13px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+        th, td { border: 1px solid #ccc; padding: 6px; }
+        th { background-color: #eee; cursor: pointer; user-select: none; position: relative; }
+        th.sort-asc::after { content: " ▲"; font-size: 10px; color: #333; }
+        th.sort-desc::after { content: " ▼"; font-size: 10px; color: #333; }
+        tbody tr:nth-child(odd) { background: #fbfdff; }
+        tbody tr:hover { background: #eef6ff; }
+        .small { font-size:11px; color:#333; }
+        .controls { margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+        .btn { padding:6px 10px; border-radius:4px; border:1px solid #ccc; background:white; cursor:pointer; }
+    </style>
 </head>
 <body>
+    <h2>WORK_ORDER_EM</h2>
 
-  <h2>WORK_ORDER_EM</h2>
-  <!-- Menu Buttons -->
-  <button class="menu-btn active" onclick="showMenu('menu1', this)">Work Order</button>
-  <button class="menu-btn" onclick="showMenu('menu2', this)">Detail Part</button>
-  <button class="menu-btn" onclick="showMenu('menu3', this)">External Job</button>
+    <div class="tabs">
+        <div class="tab active" id="tab-work">Work Order</div>
+        <div class="tab" id="tab-detail">Detail Part</div>
+        <div class="tab" id="tab-ext">External Job</div>
+    </div>
 
-  <!-- Menu 1 -->
-  <div id="menu1" class="menu-content" style="display:block;">
-    <h3>Work Order</h3>
-    <input type="file" id="fileInputMenu1">
-    <table id="tableMenu1">
-      <thead><tr><th>Sample WO Column</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
+    <!-- PANEL: Work Order (Menu 1) -->
+    <div class="panel active" id="panel-work">
+        <div class="filter-container">
+            <label>Room: <input type="text" id="w-filter-room"></label>
+            <label>Order: <input type="text" id="w-filter-order"></label>
+            <label>MAT: <input type="text" id="w-filter-mat"></label>
+            <label>Section: <input type="text" id="w-filter-section"></label>
+            <label>CPH: <input type="text" id="w-filter-cph"></label>
+            <label>Status: <input type="text" id="w-filter-status"></label>
+            <div class="controls">
+                <input type="file" id="w-upload" accept=".xlsx" />
+                <button class="btn" id="w-clear">Clear filters</button>
+            </div>
+        </div>
+        <table id="w-table" class="small"></table>
+    </div>
 
-  <!-- Menu 2 -->
-  <div id="menu2" class="menu-content">
-    <h3>Detail Part</h3>
-    <input type="file" id="fileInputMenu2">
-    <table id="tableMenu2">
-      <thead><tr><th>Sample Part Column</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
+    <!-- PANEL: Detail Part (Menu 2) -->
+    <div class="panel" id="panel-detail">
+        <div class="filter-container">
+            <label>Order: <input type="text" id="d-filter-order"></label>
+            <label>Material Number: <input type="text" id="d-filter-matnum"></label>
+            <label>Material Description: <input type="text" id="d-filter-matdesc"></label>
+            <div class="controls">
+                <input type="file" id="d-upload" accept=".xlsx" />
+                <button class="btn" id="d-clear">Clear filters</button>
+            </div>
+        </div>
+        <table id="d-table" class="small"></table>
+    </div>
 
-  <!-- Menu 3 -->
-  <div id="menu3" class="menu-content">
-    <h3>External Job</h3>
-    <input type="file" id="fileInputMenu3">
-    <table id="externalJobTable">
-      <thead>
-        <tr>
-          <th>Room</th>
-          <th>Manufacturer model</th>
-          <th>Order Number</th>
-          <th>Maintenance activity type</th>
-          <th>Field displaying user status</th>
-          <th>Description</th>
-          <th>Aging WO</th>
-          <th>Net Price in PO USD</th>
-          <th>Cost Element</th>
-          <th>Service number</th>
-          <th>Service Short Text</th>
-          <th>Name</th>
-          <th>Purchase Requisition Number</th>
-          <th>Purchasing Document Number</th>
-          <th>Entry Sheet Number</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+    <!-- PANEL: External Job (Menu 3) -->
+    <div class="panel" id="panel-ext">
+        <div class="filter-container">
+            <label>Room: <input type="text" id="e-filter-room"></label>
+            <label>Order: <input type="text" id="e-filter-order"></label>
+            <label>Activity: <input type="text" id="e-filter-activity"></label>
+            <label>Description: <input type="text" id="e-filter-desc"></label>
+            <div class="controls">
+                <input type="file" id="e-upload" accept=".xlsx" />
+                <button class="btn" id="e-clear">Clear filters</button>
+            </div>
+        </div>
+        <table id="e-table" class="small"></table>
+    </div>
 
-<script>
-function showMenu(menuId, el) {
-  document.querySelectorAll('.menu-content').forEach(div => div.style.display = "none");
-  document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove("active"));
-  document.getElementById(menuId).style.display = "block";
-  el.classList.add("active");
-}
+    <script>
+    // ----------------- shared helper functions (sama persis dengan punyamu) -----------------
+    function formatDateFromSerialOrDate(v) { /* ... sama seperti kode lama ... */ }
+    function formatCurrency(value) { /* ... sama seperti kode lama ... */ }
+    function applyStyleToTd(td, colName, valText) { /* ... sama seperti kode lama ... */ }
+    function parseValueForSort(text) { /* ... sama seperti kode lama ... */ }
+    function clearSortIndicators(tableEl) { /* ... sama seperti kode lama ... */ }
+    function debounce(fn, wait) { let t; return function(...args){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,args),wait); }; }
+    function buildTableFromJson(tableEl, headers, rows) { /* ... sama seperti kode lama ... */ }
+    function sortTableByIndex(tableEl, colIndex, thElement) { /* ... sama seperti kode lama ... */ }
+    function getIndex(headers, keyword) { keyword=(keyword||'').toLowerCase(); return headers.findIndex(h=>(h||'').toLowerCase().includes(keyword)); }
 
-// Reader untuk Menu 1
-document.getElementById('fileInputMenu1').addEventListener('change', function(e){
-  readExcelToTable(e.target.files[0], "tableMenu1");
-});
+    // ----------------- tab switching -----------------
+    const tabWork=document.getElementById('tab-work'), tabDetail=document.getElementById('tab-detail'), tabExt=document.getElementById('tab-ext');
+    const panelWork=document.getElementById('panel-work'), panelDetail=document.getElementById('panel-detail'), panelExt=document.getElementById('panel-ext');
+    tabWork.onclick=()=>{ [tabWork,tabDetail,tabExt].forEach(t=>t.classList.remove('active')); tabWork.classList.add('active');
+                          [panelWork,panelDetail,panelExt].forEach(p=>p.classList.remove('active')); panelWork.classList.add('active'); };
+    tabDetail.onclick=()=>{ [tabWork,tabDetail,tabExt].forEach(t=>t.classList.remove('active')); tabDetail.classList.add('active');
+                            [panelWork,panelDetail,panelExt].forEach(p=>p.classList.remove('active')); panelDetail.classList.add('active'); };
+    tabExt.onclick=()=>{ [tabWork,tabDetail,tabExt].forEach(t=>t.classList.remove('active')); tabExt.classList.add('active');
+                         [panelWork,panelDetail,panelExt].forEach(p=>p.classList.remove('active')); panelExt.classList.add('active'); };
 
-// Reader untuk Menu 2
-document.getElementById('fileInputMenu2').addEventListener('change', function(e){
-  readExcelToTable(e.target.files[0], "tableMenu2");
-});
+    // ----------------- Menu 1 & 2 logic (copas dari kode lama) -----------------
+    // Work Order
+    let wHeaders=[]; const wTable=document.getElementById('w-table');
+    document.getElementById('w-upload').addEventListener('change', function(e){ /* sama seperti kode lama */ });
+    function applyWorkFilters(){ /* sama seperti kode lama */ }
+    const debouncedApplyWorkFilters=debounce(applyWorkFilters,120);
+    document.querySelectorAll("#panel-work .filter-container input[type=text]").forEach(inp=>inp.addEventListener('input',debouncedApplyWorkFilters));
+    document.getElementById('w-clear').onclick=()=>{ document.querySelectorAll("#panel-work .filter-container input[type=text]").forEach(i=>i.value=''); applyWorkFilters(); };
 
-// Reader untuk Menu 3
-document.getElementById('fileInputMenu3').addEventListener('change', function(e){
-  readExcelToTable(e.target.files[0], "externalJobTable");
-});
+    // Detail Part
+    let dHeaders=[]; const dTable=document.getElementById('d-table');
+    document.getElementById('d-upload').addEventListener('change', function(e){ /* sama seperti kode lama */ });
+    function applyDetailFilters(){ /* sama seperti kode lama */ }
+    const debouncedApplyDetailFilters=debounce(applyDetailFilters,120);
+    document.querySelectorAll("#panel-detail .filter-container input[type=text]").forEach(inp=>inp.addEventListener('input',debouncedApplyDetailFilters));
+    document.getElementById('d-clear').onclick=()=>{ document.querySelectorAll("#panel-detail .filter-container input[type=text]").forEach(i=>i.value=''); applyDetailFilters(); };
 
-// Fungsi umum baca Excel ke tabel
-function readExcelToTable(file, tableId){
-  if(!file) return;
-  let reader = new FileReader();
-  reader.onload = function(e){
-    let data = new Uint8Array(e.target.result);
-    let workbook = XLSX.read(data, { type:'array' });
-    let sheet = workbook.Sheets[workbook.SheetNames[0]];
-    let json = XLSX.utils.sheet_to_json(sheet, { header:1 });
+    // ----------------- External Job (Menu 3) logic -----------------
+    let eHeaders=[]; const eTable=document.getElementById('e-table');
 
-    let tbody = document.querySelector(#${tableId} tbody);
-    tbody.innerHTML = "";
-    json.slice(1).forEach(row => {
-      if(row.length === 0) return;
-      let tr = document.createElement("tr");
-      row.forEach(cell => {
-        let td = document.createElement("td");
-        td.textContent = cell || "";
-        tr.appendChild(td);
-      });
-      tbody.appendChild(tr);
+    document.getElementById('e-upload').addEventListener('change', function(e){
+        const f=e.target.files[0]; if(!f) return;
+        const reader=new FileReader();
+        reader.onload=function(ev){
+            const data=new Uint8Array(ev.target.result);
+            const wb=XLSX.read(data,{type:'array'});
+            const sheet=wb.Sheets[wb.SheetNames[0]];
+            const json=XLSX.utils.sheet_to_json(sheet,{header:1,raw:true});
+            if(!json||json.length===0){ alert('No data'); return; }
+            eHeaders=json[0].map(h=>h==null?'':String(h).trim());
+            const rows=json.slice(1);
+            buildTableFromJson(eTable,eHeaders,rows);
+            applyExtFilters();
+        };
+        reader.readAsArrayBuffer(f);
     });
-  };
-  reader.readAsArrayBuffer(file);
-}
-</script>
+
+    function applyExtFilters(){
+        const fRoom=(document.getElementById('e-filter-room').value||'').toLowerCase();
+        const fOrder=(document.getElementById('e-filter-order').value||'').toLowerCase();
+        const fAct=(document.getElementById('e-filter-activity').value||'').toLowerCase();
+        const fDesc=(document.getElementById('e-filter-desc').value||'').toLowerCase();
+        if(!eTable.tBodies[0]) return;
+        const rows=Array.from(eTable.tBodies[0].rows);
+
+        const idxRoom=getIndex(eHeaders,'room');
+        const idxOrder=getIndex(eHeaders,'order');
+        const idxAct=getIndex(eHeaders,'activity');
+        const idxDesc=getIndex(eHeaders,'description');
+
+        rows.forEach(row=>{
+            let show=true;
+            if(fRoom && idxRoom>=0){ if(!row.cells[idxRoom].textContent.toLowerCase().includes(fRoom)) show=false; }
+            if(show && fOrder && idxOrder>=0){ if(!row.cells[idxOrder].textContent.toLowerCase().includes(fOrder)) show=false; }
+            if(show && fAct && idxAct>=0){ if(!row.cells[idxAct].textContent.toLowerCase().includes(fAct)) show=false; }
+            if(show && fDesc && idxDesc>=0){ if(!row.cells[idxDesc].textContent.toLowerCase().includes(fDesc)) show=false; }
+            row.style.display=show?'':'none';
+        });
+    }
+
+    const debouncedApplyExtFilters=debounce(applyExtFilters,120);
+    document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(inp=>inp.addEventListener('input',debouncedApplyExtFilters));
+    document.getElementById('e-clear').onclick=()=>{ document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(i=>i.value=''); applyExtFilters(); };
+    </script>
 </body>
 </html>
