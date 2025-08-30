@@ -2,38 +2,70 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>WORK_ORDER_EM</title>
+    <title>WORK_ORDER_EM - Multi Menu</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body { font-family: Arial; font-size: 12px; margin: 12px; }
+        .tabs { display:flex; gap:8px; margin-bottom:12px; }
+        .tab { padding:8px 14px; background:#e9f0ff; border-radius:6px; cursor:pointer; user-select:none; }
+        .tab.active { background:#2f80ed; color:white; font-weight:600; }
+        .panel { display:none; }
+        .panel.active { display:block; }
         .filter-container { margin-bottom: 12px; padding: 10px; background-color: #f7f7f7; border-radius: 6px; }
         .filter-container label { margin-right: 8px; font-size: 13px; }
         table { border-collapse: collapse; width: 100%; margin-top: 8px; }
         th, td { border: 1px solid #ccc; padding: 6px; }
-        th { background-color: #eee; cursor: pointer; user-select: none; }
+        th { background-color: #eee; cursor: pointer; user-select: none; position: relative; }
         th.sort-asc::after { content: " ▲"; font-size: 10px; color: #333; }
         th.sort-desc::after { content: " ▼"; font-size: 10px; color: #333; }
+        tbody tr:nth-child(odd) { background: #fbfdff; }
+        tbody tr:hover { background: #eef6ff; }
+        .small { font-size:11px; color:#333; }
+        .controls { margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+        .btn { padding:6px 10px; border-radius:4px; border:1px solid #ccc; background:white; cursor:pointer; }
     </style>
 </head>
 <body>
     <h2>WORK_ORDER_EM</h2>
-    <div class="filter-container">
-        <label>Room: <input type="text" id="filter-room" placeholder="filter Room"></label>
-        <label>Order: <input type="text" id="filter-order" placeholder="filter Order"></label>
-        <label>MAT: <input type="text" id="filter-mat" placeholder="filter MAT"></label>
-        <label>Section: <input type="text" id="filter-section" placeholder="filter Section"></label>
-        <label>CPH: <input type="text" id="filter-cph" placeholder="filter CPH"></label>
-        <label>Status: <input type="text" id="filter-status" placeholder="filter Status"></label>
-        <br><br>
-        <input type="file" id="upload" accept=".xlsx" />
-        <button id="clear-filters" style="margin-left:12px;">Clear filters</button>
+
+    <div class="tabs">
+        <div class="tab active" id="tab-work">Work Order</div>
+        <div class="tab" id="tab-detail">Detail Part</div>
     </div>
 
-    <!-- kosongkan table, skrip akan bangun thead/tbody via DOM -->
-    <table id="wo-table"></table>
+    <!-- PANEL: Work Order (Menu 1) -->
+    <div class="panel active" id="panel-work">
+        <div class="filter-container">
+            <label>Room: <input type="text" id="w-filter-room" placeholder="filter Room"></label>
+            <label>Order: <input type="text" id="w-filter-order" placeholder="filter Order"></label>
+            <label>MAT: <input type="text" id="w-filter-mat" placeholder="filter MAT"></label>
+            <label>Section: <input type="text" id="w-filter-section" placeholder="filter Section"></label>
+            <label>CPH: <input type="text" id="w-filter-cph" placeholder="filter CPH"></label>
+            <label>Status: <input type="text" id="w-filter-status" placeholder="filter Status"></label>
+            <div class="controls">
+                <input type="file" id="w-upload" accept=".xlsx" />
+                <button class="btn" id="w-clear">Clear filters</button>
+            </div>
+        </div>
+        <table id="w-table" class="small"></table>
+    </div>
+
+    <!-- PANEL: Detail Part (Menu 2) -->
+    <div class="panel" id="panel-detail">
+        <div class="filter-container">
+            <label>Order: <input type="text" id="d-filter-order" placeholder="filter Order"></label>
+            <label>Material Number: <input type="text" id="d-filter-matnum" placeholder="filter Material Number"></label>
+            <label>Material Description: <input type="text" id="d-filter-matdesc" placeholder="filter Material Description"></label>
+            <div class="controls">
+                <input type="file" id="d-upload" accept=".xlsx" />
+                <button class="btn" id="d-clear">Clear filters</button>
+            </div>
+        </div>
+        <table id="d-table" class="small"></table>
+    </div>
 
     <script>
-    // ====== helpers ======
+    // ----------------- Shared helpers -----------------
     function formatDateFromSerialOrDate(v) {
         if (v === null || v === undefined || v === '') return "";
         const options = { day: '2-digit', month: 'short', year: 'numeric' };
@@ -53,43 +85,35 @@
         return !isNaN(num) ? ("$" + Math.round(num).toLocaleString()) : String(value);
     }
 
-    function applyStyleToTd(td, col, valText) {
-        col = (col || '').toString().trim().toLowerCase();
-        valText = (valText === null || valText === undefined) ? '' : String(valText).trim();
-        // alignment
+    function applyStyleToTd(td, colName, valText) {
+        if (!td) return;
+        const col = String(colName || '').toLowerCase();
+        const val = (valText === null || valText === undefined) ? '' : String(valText).trim();
         if (["order","created on","planning","target date","end date","cost","include","exclude"].includes(col)) {
             td.style.textAlign = "right";
         } else if (["user status","mat"].includes(col)) {
             td.style.textAlign = "center";
-        } else {
-            td.style.textAlign = "left";
-        }
+        } else td.style.textAlign = "left";
 
-        // background colors
         if (col === "status part") {
-            if (valText === "Complete") { td.style.backgroundColor = "green"; td.style.color = "white"; }
-            else if (valText === "Not Complete") { td.style.backgroundColor = "red"; td.style.color = "white"; }
+            if (val === "Complete") { td.style.backgroundColor = "green"; td.style.color = "white"; }
+            else if (val === "Not Complete") { td.style.backgroundColor = "red"; td.style.color = "white"; }
         } else if (col === "aging") {
-            const aging = parseInt(valText);
-            if (!isNaN(aging)) {
-                td.style.backgroundColor = (aging <= 30) ? "green" : "red";
-                td.style.color = "white";
-            }
+            const aging = parseInt(val);
+            if (!isNaN(aging)) { td.style.backgroundColor = (aging <= 30) ? "green" : "red"; td.style.color = "white"; }
         } else if (col === "status amt") {
-            if (valText === "O") { td.style.backgroundColor = "lightgray"; td.style.color = "black"; }
-            else if (valText === "YTS") { td.style.backgroundColor = "green"; td.style.color = "white"; }
-            else if (valText === "IP") { td.style.backgroundColor = "orange"; td.style.color = "red"; }
-            else if (valText === "C") { td.style.backgroundColor = "black"; td.style.color = "white"; }
+            if (val === "O") { td.style.backgroundColor = "lightgray"; td.style.color = "black"; }
+            else if (val === "YTS") { td.style.backgroundColor = "green"; td.style.color = "white"; }
+            else if (val === "IP") { td.style.backgroundColor = "orange"; td.style.color = "red"; }
+            else if (val === "C") { td.style.backgroundColor = "black"; td.style.color = "white"; }
         }
     }
 
     function parseValueForSort(text) {
         const s = (text === null || text === undefined) ? '' : String(text).trim();
         if (s === '') return '';
-        // try number
         const num = Number(s.replace(/[^0-9.\-]/g, ''));
         if (!isNaN(num) && /[0-9]/.test(s)) return num;
-        // try date
         const parsed = Date.parse(s);
         if (!isNaN(parsed)) return parsed;
         return s.toLowerCase();
@@ -103,18 +127,85 @@
         });
     }
 
-    // ====== globals ======
-    let currentHeaders = []; // header text array
+    // debounce
+    function debounce(fn, wait) {
+        let t;
+        return function(...args) {
+            clearTimeout(t);
+            t = setTimeout(() => fn.apply(this, args), wait);
+        };
+    }
 
-    // ====== sorting (by column index) ======
-    function sortTableByIndex(colIndex, thElement) {
-        const table = document.getElementById('wo-table');
-        if (!table) return;
-        const tbody = table.tBodies[0];
-        if (!tbody) return;
+    // ----------------- tab switching -----------------
+    const tabWork = document.getElementById('tab-work');
+    const tabDetail = document.getElementById('tab-detail');
+    const panelWork = document.getElementById('panel-work');
+    const panelDetail = document.getElementById('panel-detail');
 
+    tabWork.addEventListener('click', () => {
+        tabWork.classList.add('active');
+        tabDetail.classList.remove('active');
+        panelWork.classList.add('active');
+        panelDetail.classList.remove('active');
+    });
+    tabDetail.addEventListener('click', () => {
+        tabDetail.classList.add('active');
+        tabWork.classList.remove('active');
+        panelDetail.classList.add('active');
+        panelWork.classList.remove('active');
+    });
+
+    // ----------------- generic table build using DOM (safe) -----------------
+    function buildTableFromJson(tableEl, headers, rows) {
+        // clear
+        while (tableEl.firstChild) tableEl.removeChild(tableEl.firstChild);
+        // thead
+        const thead = document.createElement('thead');
+        const tr = document.createElement('tr');
+        headers.forEach((h, idx) => {
+            const th = document.createElement('th');
+            th.textContent = h;
+            th.dataset.colIndex = idx;
+            th.addEventListener('click', () => sortTableByIndex(tableEl, idx, th));
+            tr.appendChild(th);
+        });
+        thead.appendChild(tr);
+        tableEl.appendChild(thead);
+
+        // tbody
+        const tbody = document.createElement('tbody');
+        const frag = document.createDocumentFragment();
+        rows.forEach(rowArr => {
+            const row = document.createElement('tr');
+            for (let i = 0; i < headers.length; i++) {
+                const colName = headers[i] || '';
+                let rawVal = (rowArr && rowArr[i] !== undefined && rowArr[i] !== null) ? rowArr[i] : '';
+                let cellText = '';
+                const lc = colName.toLowerCase();
+                if (["created on","planning","target date","end date"].includes(lc)) {
+                    cellText = formatDateFromSerialOrDate(rawVal);
+                } else if (["cost","include","exclude"].includes(lc)) {
+                    cellText = formatCurrency(rawVal);
+                } else {
+                    if (rawVal instanceof Date) cellText = formatDateFromSerialOrDate(rawVal);
+                    else cellText = String(rawVal);
+                }
+                const td = document.createElement('td');
+                td.textContent = cellText;
+                applyStyleToTd(td, colName, cellText);
+                row.appendChild(td);
+            }
+            frag.appendChild(row);
+        });
+        tbody.appendChild(frag);
+        tableEl.appendChild(tbody);
+    }
+
+    function sortTableByIndex(tableEl, colIndex, thElement) {
+        if (!tableEl || !tableEl.tBodies[0]) return;
+        const tbody = tableEl.tBodies[0];
         const asc = thElement.dataset.sorted !== 'asc';
-        clearSortIndicators(table);
+        clearSortIndicators(tableEl);
         thElement.dataset.sorted = asc ? 'asc' : 'desc';
         thElement.classList.add(asc ? 'sort-asc' : 'sort-desc');
 
@@ -130,159 +221,161 @@
             if (typeof vb === 'number') return asc ? 1 : -1;
             return asc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
         });
-
         rows.forEach(r => tbody.appendChild(r));
     }
 
-    // ====== filtering ======
-    function getIndexByKeyword(keyword) {
+    // ----------------- Work Order (Menu 1) logic -----------------
+    let wHeaders = [];
+    const wTable = document.getElementById('w-table');
+
+    document.getElementById('w-upload').addEventListener('change', function(e){
+        const f = e.target.files[0]; if (!f) return;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            const data = new Uint8Array(ev.target.result);
+            const wb = XLSX.read(data, { type: 'array' });
+            const sheet = wb.Sheets[wb.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(sheet, { header:1, raw:true });
+            if (!json || json.length === 0) { alert('No data'); return; }
+            wHeaders = json[0].map(h => h === null || h === undefined ? '' : String(h).trim());
+            const rows = json.slice(1);
+            buildTableFromJson(wTable, wHeaders, rows);
+            applyWorkFilters(); // apply filters if any
+        };
+        reader.readAsArrayBuffer(f);
+    });
+
+    function getIndex(headers, keyword) {
         keyword = (keyword || '').toLowerCase();
-        return currentHeaders.findIndex(h => (h || '').toLowerCase().includes(keyword));
+        return headers.findIndex(h => (h || '').toLowerCase().includes(keyword));
     }
 
-    function filterTable() {
-        const fRoom = (document.getElementById("filter-room").value || '').toLowerCase();
-        const fOrder = (document.getElementById("filter-order").value || '').toLowerCase();
-        const fMat = (document.getElementById("filter-mat").value || '').toLowerCase();
-        const fSection = (document.getElementById("filter-section").value || '').toLowerCase();
-        const fCph = (document.getElementById("filter-cph").value || '').toLowerCase();
-        const fStatus = (document.getElementById("filter-status").value || '').toLowerCase();
+    function applyWorkFilters() {
+        const fRoom = (document.getElementById('w-filter-room').value || '').toLowerCase();
+        const fOrder = (document.getElementById('w-filter-order').value || '').toLowerCase();
+        const fMat = (document.getElementById('w-filter-mat').value || '').toLowerCase();
+        const fSection = (document.getElementById('w-filter-section').value || '').toLowerCase();
+        const fCph = (document.getElementById('w-filter-cph').value || '').toLowerCase();
+        const fStatus = (document.getElementById('w-filter-status').value || '').toLowerCase();
+        if (!wTable.tBodies[0]) return;
+        const rows = Array.from(wTable.tBodies[0].rows);
 
-        const table = document.getElementById('wo-table');
-        if (!table || !table.tBodies[0]) return;
-        const rows = Array.from(table.tBodies[0].rows);
-
-        const idxRoom = getIndexByKeyword('room');
-        const idxOrder = getIndexByKeyword('order');
-        const idxMat = getIndexByKeyword('mat');
-        const idxSection = getIndexByKeyword('section');
-        const idxCph = getIndexByKeyword('cph');
-        const idxStatus = getIndexByKeyword('status');
+        const idxRoom = getIndex(wHeaders, 'room');
+        const idxOrder = getIndex(wHeaders, 'order');
+        const idxMat = getIndex(wHeaders, 'mat');
+        const idxSection = getIndex(wHeaders, 'section');
+        const idxCph = getIndex(wHeaders, 'cph');
+        const idxStatus = getIndex(wHeaders, 'status');
 
         rows.forEach(row => {
             let show = true;
             if (fRoom && idxRoom >= 0) {
-                const cell = (row.cells[idxRoom] && row.cells[idxRoom].textContent) ? row.cells[idxRoom].textContent.toLowerCase() : '';
-                if (!cell.includes(fRoom)) show = false;
+                const txt = (row.cells[idxRoom] && row.cells[idxRoom].textContent) ? row.cells[idxRoom].textContent.toLowerCase() : '';
+                if (!txt.includes(fRoom)) show = false;
             }
             if (show && fOrder && idxOrder >= 0) {
-                const cell = (row.cells[idxOrder] && row.cells[idxOrder].textContent) ? row.cells[idxOrder].textContent.toLowerCase() : '';
-                if (!cell.includes(fOrder)) show = false;
+                const txt = (row.cells[idxOrder] && row.cells[idxOrder].textContent) ? row.cells[idxOrder].textContent.toLowerCase() : '';
+                if (!txt.includes(fOrder)) show = false;
             }
             if (show && fMat && idxMat >= 0) {
-                const cell = (row.cells[idxMat] && row.cells[idxMat].textContent) ? row.cells[idxMat].textContent.toLowerCase() : '';
-                if (!cell.includes(fMat)) show = false;
+                const txt = (row.cells[idxMat] && row.cells[idxMat].textContent) ? row.cells[idxMat].textContent.toLowerCase() : '';
+                if (!txt.includes(fMat)) show = false;
             }
             if (show && fSection && idxSection >= 0) {
-                const cell = (row.cells[idxSection] && row.cells[idxSection].textContent) ? row.cells[idxSection].textContent.toLowerCase() : '';
-                if (!cell.includes(fSection)) show = false;
+                const txt = (row.cells[idxSection] && row.cells[idxSection].textContent) ? row.cells[idxSection].textContent.toLowerCase() : '';
+                if (!txt.includes(fSection)) show = false;
             }
             if (show && fCph && idxCph >= 0) {
-                const cell = (row.cells[idxCph] && row.cells[idxCph].textContent) ? row.cells[idxCph].textContent.toLowerCase() : '';
-                if (!cell.includes(fCph)) show = false;
+                const txt = (row.cells[idxCph] && row.cells[idxCph].textContent) ? row.cells[idxCph].textContent.toLowerCase() : '';
+                if (!txt.includes(fCph)) show = false;
             }
             if (show && fStatus && idxStatus >= 0) {
-                const cell = (row.cells[idxStatus] && row.cells[idxStatus].textContent) ? row.cells[idxStatus].textContent.toLowerCase() : '';
-                if (!cell.includes(fStatus)) show = false;
+                const txt = (row.cells[idxStatus] && row.cells[idxStatus].textContent) ? row.cells[idxStatus].textContent.toLowerCase() : '';
+                if (!txt.includes(fStatus)) show = false;
             }
-            row.style.display = show ? "" : "none";
+            row.style.display = show ? '' : 'none';
         });
     }
 
-    // small debounce to avoid firing filter too often while typing
-    function debounce(fn, wait) {
-        let t;
-        return function(...args) {
-            clearTimeout(t);
-            t = setTimeout(() => fn.apply(this, args), wait);
-        };
-    }
-    const debouncedFilter = debounce(filterTable, 120);
-
-    // attach filter listeners
-    document.querySelectorAll(".filter-container input[type=text]").forEach(inp => {
-        inp.addEventListener('input', debouncedFilter);
+    const debouncedApplyWorkFilters = debounce(applyWorkFilters, 120);
+    document.querySelectorAll("#panel-work .filter-container input[type=text]").forEach(inp => inp.addEventListener('input', debouncedApplyWorkFilters));
+    document.getElementById('w-clear').addEventListener('click', () => {
+        document.querySelectorAll("#panel-work .filter-container input[type=text]").forEach(i => i.value = '');
+        applyWorkFilters();
     });
 
-    document.getElementById('clear-filters').addEventListener('click', () => {
-        document.querySelectorAll(".filter-container input[type=text]").forEach(inp => inp.value = '');
-        filterTable();
-    });
+    // ----------------- Detail Part (Menu 2) logic -----------------
+    let dHeaders = [];
+    const dTable = document.getElementById('d-table');
 
-    // ====== upload & render using DOM APIs (no string-html building) ======
-    document.getElementById('upload').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
+    document.getElementById('d-upload').addEventListener('change', function(e){
+        const f = e.target.files[0]; if (!f) return;
         const reader = new FileReader();
         reader.onload = function(ev) {
             const data = new Uint8Array(ev.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const sheetName = workbook.SheetNames[0];
-            if (!sheetName) return;
-            const sheet = workbook.Sheets[sheetName];
-            const json = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true });
-            if (!json || json.length === 0) {
-                alert('No data found in sheet');
-                return;
+            const wb = XLSX.read(data, { type: 'array' });
+            const sheet = wb.Sheets[wb.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(sheet, { header:1, raw:true });
+            if (!json || json.length === 0) { alert('No data'); return; }
+            dHeaders = json[0].map(h => h === null || h === undefined ? '' : String(h).trim());
+            const rows = json.slice(1);
+            buildTableFromJson(dTable, dHeaders, rows);
+            applyDetailFilters(); // apply filters if any
+        };
+        reader.readAsArrayBuffer(f);
+    });
+
+    function applyDetailFilters() {
+        const fOrder = (document.getElementById('d-filter-order').value || '').toLowerCase();
+        const fMatNum = (document.getElementById('d-filter-matnum').value || '').toLowerCase();
+        const fMatDesc = (document.getElementById('d-filter-matdesc').value || '').toLowerCase();
+        if (!dTable.tBodies[0]) return;
+        const rows = Array.from(dTable.tBodies[0].rows);
+
+        const idxOrder = getIndex(dHeaders, 'order'); // order number column
+        const idxMatNum = getIndex(dHeaders, 'material') !== -1 ? getIndex(dHeaders, 'material') : getIndex(dHeaders, 'material number'); // try 'material' or 'material number'
+        const idxMatDesc = getIndex(dHeaders, 'description') !== -1 ? getIndex(dHeaders, 'description') : getIndex(dHeaders, 'material description');
+
+        rows.forEach(row => {
+            let show = true;
+            if (fOrder && idxOrder >= 0) {
+                const txt = (row.cells[idxOrder] && row.cells[idxOrder].textContent) ? row.cells[idxOrder].textContent.toLowerCase() : '';
+                if (!txt.includes(fOrder)) show = false;
+            } else if (fOrder && idxOrder < 0) {
+                // fallback: row contains
+                if (!row.textContent.toLowerCase().includes(fOrder)) show = false;
             }
 
-            // headers and rows
-            currentHeaders = json[0].map(h => h === null || h === undefined ? '' : String(h).trim());
-            const dataRows = json.slice(1);
-
-            const table = document.getElementById('wo-table');
-            // remove old children
-            while (table.firstChild) table.removeChild(table.firstChild);
-
-            // build thead
-            const thead = document.createElement('thead');
-            const headTr = document.createElement('tr');
-            currentHeaders.forEach((h, idx) => {
-                const th = document.createElement('th');
-                th.textContent = h;
-                th.dataset.colIndex = idx;
-                th.style.cursor = 'pointer';
-                th.addEventListener('click', () => sortTableByIndex(idx, th));
-                headTr.appendChild(th);
-            });
-            thead.appendChild(headTr);
-            table.appendChild(thead);
-
-            // build tbody with fragment for performance
-            const tbody = document.createElement('tbody');
-            const frag = document.createDocumentFragment();
-            dataRows.forEach(rowArr => {
-                const tr = document.createElement('tr');
-                for (let i = 0; i < currentHeaders.length; i++) {
-                    const colName = currentHeaders[i] || '';
-                    let rawVal = (rowArr && rowArr[i] !== undefined && rowArr[i] !== null) ? rowArr[i] : '';
-                    let cellText = '';
-                    const lc = colName.toLowerCase();
-                    if (["created on","planning","target date","end date"].includes(lc)) {
-                        cellText = formatDateFromSerialOrDate(rawVal);
-                    } else if (["cost","include","exclude"].includes(lc)) {
-                        cellText = formatCurrency(rawVal);
-                    } else {
-                        if (rawVal instanceof Date) cellText = formatDateFromSerialOrDate(rawVal);
-                        else cellText = String(rawVal);
-                    }
-                    const td = document.createElement('td');
-                    td.textContent = cellText;
-                    applyStyleToTd(td, colName, cellText);
-                    tr.appendChild(td);
+            if (show && fMatNum) {
+                if (idxMatNum >= 0) {
+                    const txt = (row.cells[idxMatNum] && row.cells[idxMatNum].textContent) ? row.cells[idxMatNum].textContent.toLowerCase() : '';
+                    if (!txt.includes(fMatNum)) show = false;
+                } else {
+                    if (!row.textContent.toLowerCase().includes(fMatNum)) show = false;
                 }
-                frag.appendChild(tr);
-            });
-            tbody.appendChild(frag);
-            table.appendChild(tbody);
+            }
 
-            // apply active filters (if any)
-            filterTable();
-            // clear any sort markers
-            clearSortIndicators(table);
-        };
-        reader.readAsArrayBuffer(file);
+            if (show && fMatDesc) {
+                if (idxMatDesc >= 0) {
+                    const txt = (row.cells[idxMatDesc] && row.cells[idxMatDesc].textContent) ? row.cells[idxMatDesc].textContent.toLowerCase() : '';
+                    if (!txt.includes(fMatDesc)) show = false;
+                } else {
+                    if (!row.textContent.toLowerCase().includes(fMatDesc)) show = false;
+                }
+            }
+
+            row.style.display = show ? '' : 'none';
+        });
+    }
+
+    const debouncedApplyDetailFilters = debounce(applyDetailFilters, 120);
+    document.querySelectorAll("#panel-detail .filter-container input[type=text]").forEach(inp => inp.addEventListener('input', debouncedApplyDetailFilters));
+    document.getElementById('d-clear').addEventListener('click', () => {
+        document.querySelectorAll("#panel-detail .filter-container input[type=text]").forEach(i => i.value = '');
+        applyDetailFilters();
     });
+
+    // ----------------- end -----------------
     </script>
 </body>
 </html>
