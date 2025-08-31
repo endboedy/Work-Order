@@ -109,7 +109,7 @@ function clearSortIndicators(t){if(!t)return;t.querySelectorAll('th').forEach(th
 function debounce(fn,wait){let t;return function(...a){clearTimeout(t);t=setTimeout(()=>fn.apply(this,a),wait);};}
 function getIndex(headers,keyword){keyword=(keyword||'').toLowerCase();return headers.findIndex(h=>(h||'').toLowerCase().includes(keyword));}
 
-<script>
+
 // ----------------- Tab Switch -----------------
 const tabs = document.querySelectorAll('.tab');
 const panels = document.querySelectorAll('.panel');
