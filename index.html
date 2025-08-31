@@ -279,125 +279,91 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
     });
 })();
 </script>
-
-  <!-- ================= MENU 5 : Add WO Monthly ================= -->
-<div class="tab-content" id="addmonthly">
-  <h2>Add WO Monthly</h2>
-
-  <!-- Form tambah Order -->
-  <div style="margin-bottom: 15px;">
-    <label>Order: <input type="text" id="orderInput"></label>
-    <label>Month: <input type="text" id="monthInput" placeholder="ex: August"></label>
-    <label>Reman: <input type="text" id="remanInput"></label>
-    <button onclick="addMonthlyOrder()">Add Order</button>
+<!-- ================= MENU 5: ADD WO MONTHLY ================= -->
+<div class="tab-content" id="content-addmonthly" style="display:none;">
+  <h3>Add WO Monthly</h3>
+  <div>
+    <label>Order:</label>
+    <input type="text" id="orderInput">
+    <label>Month:</label>
+    <input type="text" id="monthInput" placeholder="ex: August">
+    <label>Reman:</label>
+    <input type="text" id="remanInput">
+    <button onclick="addOrder()">Add Order</button>
   </div>
 
-  <!-- Tabel hasil -->
-  <table border="1" width="100%" cellspacing="0" cellpadding="5">
-    <thead>
-      <tr style="background:#eee;">
-        <th>No</th>
-        <th>Room</th>
-        <th>Order</th>
-        <th>MAT</th>
-        <th>Description</th>
-        <th>Month</th>
-        <th>Reman</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody id="monthlyTableBody">
-      <!-- isi otomatis via JS -->
-    </tbody>
-  </table>
+  <div id="orderList" style="margin-top:15px;">
+    <!-- List WO Monthly akan muncul di sini -->
+  </div>
 </div>
 
 <script>
-// ===================== DATA DUMMY MENU 1 (lookup) =====================
-const menu1Data = [
-  { order: "ORD001", room: "Room A", mat: "MAT-111", description: "Filter Engine" },
-  { order: "ORD002", room: "Room B", mat: "MAT-222", description: "Hydraulic Pump" },
-  { order: "ORD003", room: "Room C", mat: "MAT-333", description: "Brake System" }
-];
+  let orders = [];
+  let orderId = 1;
 
-// ===================== DATA MENU 5 (Add WO Monthly) =====================
-let monthlyOrders = [];
-let editIndex = null;
+  function renderOrders() {
+    const container = document.getElementById("orderList");
+    container.innerHTML = ""; // reset isi
 
-function lookupOrder(order) {
-  return menu1Data.find(item => item.order === order) || {};
-}
+    if (orders.length === 0) {
+      container.innerHTML = "<p><i>No WO Monthly data.</i></p>";
+      return;
+    }
 
-function addMonthlyOrder() {
-  const order = document.getElementById("orderInput").value.trim();
-  const month = document.getElementById("monthInput").value.trim();
-  const reman = document.getElementById("remanInput").value.trim();
-
-  if (!order) {
-    alert("Order wajib diisi!");
-    return;
+    orders.forEach((order, index) => {
+      const div = document.createElement("div");
+      div.style.marginBottom = "8px";
+      div.innerHTML = `
+        <b>${index+1}. ${order.order}</b> | ${order.month} | Reman: ${order.reman} 
+        <button onclick="editOrder(${order.id})">Edit</button>
+        <button onclick="deleteOrder(${order.id})">Delete</button>
+      `;
+      container.appendChild(div);
+    });
   }
 
-  if (editIndex !== null) {
-    // edit mode
-    monthlyOrders[editIndex] = { order, month, reman };
-    editIndex = null;
-  } else {
-    // add mode
-    monthlyOrders.push({ order, month, reman });
+  function addOrder() {
+    const order = document.getElementById("orderInput").value.trim();
+    const month = document.getElementById("monthInput").value.trim();
+    const reman = document.getElementById("remanInput").value.trim();
+
+    if (!order || !month) {
+      alert("Order dan Month wajib diisi!");
+      return;
+    }
+
+    orders.push({ id: orderId++, order, month, reman });
+    renderOrders();
+
+    // reset input
+    document.getElementById("orderInput").value = "";
+    document.getElementById("monthInput").value = "";
+    document.getElementById("remanInput").value = "";
   }
 
-  document.getElementById("orderInput").value = "";
-  document.getElementById("monthInput").value = "";
-  document.getElementById("remanInput").value = "";
+  function editOrder(id) {
+    const order = orders.find(o => o.id === id);
+    if (!order) return;
 
-  renderMonthlyTable();
-}
+    const newOrder = prompt("Edit Order:", order.order);
+    if (newOrder !== null) order.order = newOrder;
 
-function renderMonthlyTable() {
-  const tbody = document.getElementById("monthlyTableBody");
-  tbody.innerHTML = "";
+    const newMonth = prompt("Edit Month:", order.month);
+    if (newMonth !== null) order.month = newMonth;
 
-  monthlyOrders.forEach((item, idx) => {
-    const lookup = lookupOrder(item.order);
+    const newReman = prompt("Edit Reman:", order.reman);
+    if (newReman !== null) order.reman = newReman;
 
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${idx + 1}</td>
-      <td>${lookup.room || ""}</td>
-      <td>${item.order}</td>
-      <td>${lookup.mat || ""}</td>
-      <td>${lookup.description || ""}</td>
-      <td>${item.month}</td>
-      <td>${item.reman}</td>
-      <td>
-        <span style="color:blue;cursor:pointer" onclick="editMonthlyOrder(${idx})">edit</span> | 
-        <span style="color:green;cursor:pointer" onclick="saveMonthlyOrder(${idx})">save</span> | 
-        <span style="color:red;cursor:pointer" onclick="deleteMonthlyOrder(${idx})">delete</span>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-function editMonthlyOrder(idx) {
-  const item = monthlyOrders[idx];
-  document.getElementById("orderInput").value = item.order;
-  document.getElementById("monthInput").value = item.month;
-  document.getElementById("remanInput").value = item.reman;
-  editIndex = idx;
-}
-
-function saveMonthlyOrder(idx) {
-  alert("Data order " + monthlyOrders[idx].order + " berhasil disimpan ✅");
-}
-
-function deleteMonthlyOrder(idx) {
-  if (confirm("Yakin hapus order " + monthlyOrders[idx].order + "?")) {
-    monthlyOrders.splice(idx, 1);
-    renderMonthlyTable();
+    renderOrders();
   }
-}
+
+  function deleteOrder(id) {
+    if (confirm("Yakin mau hapus data ini?")) {
+      orders = orders.filter(o => o.id !== id);
+      renderOrders();
+    }
+  }
 </script>
-</body>
+
+  </body>
 </html>
