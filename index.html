@@ -406,8 +406,8 @@ document.getElementById("a-clear").addEventListener("click",()=>{
 // edit / save / delete
 function editRow(i){ aData[i].editing=true; buildAddMonthlyTable(); }
 function saveRow(i){
-    const monthInput = aTable.querySelector(input[data-edit="Month"][data-idx="${i}"]);
-    const remanInput = aTable.querySelector(input[data-edit="Reman"][data-idx="${i}"]);
+    const monthInput = aTable.querySelector(`input[data-edit="Month"][data-idx="${i}"]`);
+    const remanInput = aTable.querySelector(`input[data-edit="Reman"][data-idx="${i}"]`);
     aData[i][4]=monthInput.value;
     aData[i][5]=remanInput.value;
     aData[i].editing=false;
