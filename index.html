@@ -128,17 +128,8 @@ function debounce(fn,wait){let t;return function(...a){clearTimeout(t);t=setTime
 function getIndex(headers,keyword){keyword=(keyword||'').toLowerCase();return headers.findIndex(h=>(h||'').toLowerCase().includes(keyword));}
 
 // ----------------- Tab Switch -----------------
-const tabs=document.querySelectorAll('.tab');
-const panels=document.querySelectorAll('.panel');
-tabs.forEach(tab=>{
-  tab.addEventListener('click',()=>{
-    tabs.forEach(t=>t.classList.remove('active'));
-    tab.classList.add('active');
-    panels.forEach(p=>p.classList.remove('active'));
-    const pid='panel-'+tab.id.split('-')[1];
-    document.getElementById(pid).classList.add('active');
-  });
-});
+const tabs=document.querySelectorAll('.tab');const panels=document.querySelectorAll('.panel');
+tabs.forEach(tab=>{tab.addEventListener('click',()=>{tabs.forEach(t=>t.classList.remove('active'));tab.classList.add('active');panels.forEach(p=>p.classList.remove('active'));const pid='panel-'+tab.id.split('-')[1];document.getElementById(pid).classList.add('active');});});
 
 // ----------------- Build Table -----------------
 function buildTableFromJson(tableEl,headers,rows){
@@ -305,83 +296,6 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
         buildMonthlyTable();
     });
 })();
-</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script>
-
-// ----------------- MENU 5: Add WO Monthly -----------------
-function renderATable(data) {
-  const table = document.getElementById("a-table");
-  table.innerHTML = "";
-
-  if (data.length === 0) {
-    table.innerHTML = "<tr><td>No data found</td></tr>";
-    return;
-  }
-
-  // buat header
-  const header = table.createTHead();
-  const headerRow = header.insertRow();
-  Object.keys(data[0]).forEach(key => {
-    const th = document.createElement("th");
-    th.textContent = key;
-    headerRow.appendChild(th);
-  });
-
-  // isi data
-  const tbody = table.createTBody();
-  data.forEach(row => {
-    const tr = tbody.insertRow();
-    Object.values(row).forEach(val => {
-      const td = tr.insertCell();
-      td.textContent = val;
-    });
-  });
-}
-
-// data dummy (bisa kamu ganti dari backend / JSON / API)
-let aData = [
-  { No: 1, Room: "R1", Order: "WO-001", MAT: "MAT01", Description: "Check pump", Month: "Jan", Reman: "Yes", Action: "Done" },
-  { No: 2, Room: "R2", Order: "WO-002", MAT: "MAT02", Description: "Replace filter", Month: "Feb", Reman: "No", Action: "Pending" },
-  { No: 3, Room: "R3", Order: "WO-003", MAT: "MAT03", Description: "Service motor", Month: "Mar", Reman: "Yes", Action: "In Progress" }
-];
-
-// pertama kali render
-renderATable(aData);
-
-// filter
-function filterATable() {
-  const no = document.getElementById("a-filter-no").value.toLowerCase();
-  const room = document.getElementById("a-filter-room").value.toLowerCase();
-  const order = document.getElementById("a-filter-order").value.toLowerCase();
-  const mat = document.getElementById("a-filter-mat").value.toLowerCase();
-  const desc = document.getElementById("a-filter-desc").value.toLowerCase();
-  const month = document.getElementById("a-filter-month").value.toLowerCase();
-  const reman = document.getElementById("a-filter-reman").value.toLowerCase();
-  const action = document.getElementById("a-filter-action").value.toLowerCase();
-
-  const filtered = aData.filter(row =>
-    row.No.toString().toLowerCase().includes(no) &&
-    row.Room.toLowerCase().includes(room) &&
-    row.Order.toLowerCase().includes(order) &&
-    row.MAT.toLowerCase().includes(mat) &&
-    row.Description.toLowerCase().includes(desc) &&
-    row.Month.toLowerCase().includes(month) &&
-    row.Reman.toLowerCase().includes(reman) &&
-    row.Action.toLowerCase().includes(action)
-  );
-  renderATable(filtered);
-}
-
-document.querySelectorAll("#panel-addmonthly input[type=text]").forEach(input => {
-  input.addEventListener("input", filterATable);
-});
-
-// clear filter
-document.getElementById("a-clear").addEventListener("click", function() {
-  document.querySelectorAll("#panel-addmonthly input[type=text]").forEach(input => input.value = "");
-  renderATable(aData);
-});
 </script>
 </body>
 </html>
