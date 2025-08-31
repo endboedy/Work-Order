@@ -240,7 +240,8 @@ function applyExtFilters(){
 document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(inp=>inp.addEventListener('input',debounce(applyExtFilters,120)));
 document.getElementById('e-clear').addEventListener('click',()=>{document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(i=>i.value=''); applyExtFilters();});
 
-// ----------------- Menu 4: List WO Monthly -----------------
+<!-- ----------------- Menu 4: List WO Monthly ----------------- -->
+<script>
 (function(){
     const mTable=document.getElementById('m-table');
     function buildMonthlyTable(){
@@ -256,9 +257,12 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
         const rows=Array.from(wTable.tBodies[0].rows)
             .filter(r=>{
                 let show=true;
-                const idxMonth=getIndex(headers,'month'); const idxRoom=getIndex(headers,'room');
-                const idxUserStatus=getIndex(headers,'user status'); const idxMat=getIndex(headers,'mat');
-                const idxCph=getIndex(headers,'cph'); const idxSection=getIndex(headers,'section');
+                const idxMonth=getIndex(headers,'month'); 
+                const idxRoom=getIndex(headers,'room');
+                const idxUserStatus=getIndex(headers,'user status'); 
+                const idxMat=getIndex(headers,'mat');
+                const idxCph=getIndex(headers,'cph'); 
+                const idxSection=getIndex(headers,'section');
                 const idxStatusAmt=getIndex(headers,'status amt');
                 if(idxMonth>=0 && fMonth && !(r.cells[idxMonth]?.textContent.toLowerCase()||'').includes(fMonth))show=false;
                 if(idxRoom>=0 && fRoom && !(r.cells[idxRoom]?.textContent.toLowerCase()||'').includes(fRoom))show=false;
@@ -272,13 +276,16 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
             .map(r=>Array.from(r.cells).map(c=>c.textContent));
         buildTableFromJson(mTable,headers,rows);
     }
-    document.querySelectorAll("#panel-monthly .filter-container input[type=text]").forEach(inp=>inp.addEventListener('input',debounce(buildMonthlyTable,120)));
+    document.querySelectorAll("#panel-monthly .filter-container input[type=text]")
+        .forEach(inp=>inp.addEventListener('input',debounce(buildMonthlyTable,120)));
     document.getElementById('m-clear').addEventListener('click',()=>{
         document.querySelectorAll("#panel-monthly .filter-container input[type=text]").forEach(i=>i.value='');
         buildMonthlyTable();
     });
 })();
-  <!-- PANEL 5: Add WO Monthly -->
+</script>
+
+<!-- ----------------- PANEL 5: Add WO Monthly ----------------- -->
 <div class="panel" id="panel-addmonthly">
   <h3>Add WO Monthly</h3>
   <div class="filter-container">
@@ -294,9 +301,11 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
     <button class="btn" id="a-clear">Clear filters</button>
     <button class="btn" id="a-save">Save JSON</button>
     <input type="file" id="a-load" accept=".json" />
-  </div>
+  </div>
 </div>
-  // ----------------- Menu 5: Add WO Monthly -----------------
+
+<script>
+// ----------------- Menu 5: Add WO Monthly -----------------
 let aHeaders=["Room","Order","Description","MAT","Month","Reman"];
 let aData=[]; 
 const aTable=document.getElementById("a-table");
@@ -351,7 +360,9 @@ function applyAddMonthlyFilters(){
         r.style.display=show?"":"none";
     });
 }
-document.querySelectorAll("#panel-addmonthly .filter-container input[type=text]").forEach(inp=>inp.addEventListener("input",debounce(applyAddMonthlyFilters,120)));
+document.querySelectorAll("#panel-addmonthly .filter-container input[type=text]")
+    .forEach(inp=>inp.addEventListener("input",debounce(applyAddMonthlyFilters,120)));
+
 document.getElementById("a-clear").addEventListener("click",()=>{
     document.querySelectorAll("#panel-addmonthly .filter-container input[type=text]").forEach(i=>i.value="");
     applyAddMonthlyFilters();
@@ -376,6 +387,6 @@ document.getElementById("a-load").addEventListener("change",function(e){
     };
     reader.readAsText(f);
 });
-  </script>
+</script>
 </body>
 </html>
