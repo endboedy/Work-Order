@@ -285,8 +285,20 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
 </script>
 
 <!-- PANEL 5: Add WO Monthly -->
-<div id="menu5" style="display:none;"></div>
+<div id="menu5" class="tabcontent">
   <h3>Add WO Monthly</h3>
+  <textarea id="addOrdersInput" placeholder="Paste multiple Order numbers (one per line)"></textarea><br>
+  <button class="btn" onclick="addOrders()">Add Orders</button>
+  <button class="btn" onclick="saveJson()">Save JSON</button>
+  <button class="btn" onclick="loadJson()">Load JSON</button>
+
+  <div id="addMonthlyFilters">
+      Filter Room: <input type="text" id="filterRoom" oninput="applyAddMonthlyFilters()">
+      Filter Order: <input type="text" id="filterOrder" oninput="applyAddMonthlyFilters()">
+  </div>
+
+  <table id="addMonthlyTable" border="1"></table>
+</div>
 
   <!-- Input multiple order -->
   <textarea id="addOrdersInput" placeholder="Paste multiple Order numbers (one per line)" rows="5" cols="40"></textarea>
@@ -320,8 +332,8 @@ function addOrders(){
     orders.forEach(order => {
         const orderVal = String(order).trim();
         console.log("workOrders =", workOrders);
-        console.log("orderVal =", orderVal);
-        const wo = workOrders.find(o => String(o.order).trim() === orderVal);
+        console.log("OrderVal =", orderVal);
+        const wo = workOrders.find(o => String(o.Order).trim() === orderVal);
         if(wo){
             aData.push([wo.room, wo.order, wo.description, wo.mat, "", "", {editing:false}]);
         }else{
