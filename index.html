@@ -340,8 +340,8 @@ function buildAddMonthlyTable(){
         if(row.editing){
             return [
                 row[0], row[1], row[2], row[3],
-                <input type="text" value="${row[4]||""}" data-edit="Month" data-idx="${i}">,
-                <input type="text" value="${row[5]||""}" data-edit="Reman" data-idx="${i}">,
+                `<input type="text" value="${row[4]||""}" data-edit="Month" data-idx="${i}">`,
+                `<input type="text" value="${row[5]||""}" data-edit="Reman" data-idx="${i}"`>,
                 `<button class="btn" onclick="saveRow(${i})">Save</button>
                  <button class="btn" onclick="deleteRow(${i})">Delete</button>`
             ];
