@@ -319,6 +319,8 @@ function addOrders(){
 
     orders.forEach(order => {
         const orderVal = String(order).trim();
+        console.log("workOrders =", workOrders);
+        console.log("orderVal =", orderVal);
         const wo = workOrders.find(o => String(o.order).trim() === orderVal);
         if(wo){
             aData.push([wo.room, wo.order, wo.description, wo.mat, "", "", {editing:false}]);
