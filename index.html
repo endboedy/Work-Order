@@ -33,7 +33,7 @@ tbody tr:hover { background: #eef6ff; }
   <div class="tab" id="tab-detail">Detail Part</div>
   <div class="tab" id="tab-ext">External Job</div>
   <div class="tab" id="tab-monthly">List WO Monthly</div>
-  <div class="tab" id="tab-addmonthly">Add WO Monthly</div>
+  <div class="tab" id="tab-addmonthly">Add WO Monthly</div> 
 </div>
 
 <!-- PANEL 1: Work Order -->
@@ -109,26 +109,10 @@ function clearSortIndicators(t){if(!t)return;t.querySelectorAll('th').forEach(th
 function debounce(fn,wait){let t;return function(...a){clearTimeout(t);t=setTimeout(()=>fn.apply(this,a),wait);};}
 function getIndex(headers,keyword){keyword=(keyword||'').toLowerCase();return headers.findIndex(h=>(h||'').toLowerCase().includes(keyword));}
 
-
 // ----------------- Tab Switch -----------------
-const tabs = document.querySelectorAll('.tab');
-const panels = document.querySelectorAll('.panel');
+const tabs=document.querySelectorAll('.tab');const panels=document.querySelectorAll('.panel');
+tabs.forEach(tab=>{tab.addEventListener('click',()=>{tabs.forEach(t=>t.classList.remove('active'));tab.classList.add('active');panels.forEach(p=>p.classList.remove('active'));const pid='panel-'+tab.id.split('-')[1];document.getElementById(pid).classList.add('active');});});
 
-tabs.forEach(tab => {
-  tab.addEventListener('click', () => {
-    tabs.forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-
-    panels.forEach(p => p.classList.remove('active'));
-
-    const targetId = 'panel-' + tab.id.split('-')[1];
-    const panelEl = document.getElementById(targetId);
-    if (panelEl) { // <-- CEK DULU ADA ATAU TIDAK
-      panelEl.classList.add('active');
-    }
-  });
-});
-  
 // ----------------- Build Table -----------------
 function buildTableFromJson(tableEl,headers,rows){
     while(tableEl.firstChild)tableEl.removeChild(tableEl.firstChild);
@@ -256,7 +240,7 @@ function applyExtFilters(){
 document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(inp=>inp.addEventListener('input',debounce(applyExtFilters,120)));
 document.getElementById('e-clear').addEventListener('click',()=>{document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(i=>i.value=''); applyExtFilters();});
 
-<!-- ----------------- Menu 4: List WO Monthly ----------------- -->
+// ----------------- Menu 4: List WO Monthly -----------------
 (function(){
     const mTable=document.getElementById('m-table');
     function buildMonthlyTable(){
@@ -272,12 +256,9 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
         const rows=Array.from(wTable.tBodies[0].rows)
             .filter(r=>{
                 let show=true;
-                const idxMonth=getIndex(headers,'month'); 
-                const idxRoom=getIndex(headers,'room');
-                const idxUserStatus=getIndex(headers,'user status'); 
-                const idxMat=getIndex(headers,'mat');
-                const idxCph=getIndex(headers,'cph'); 
-                const idxSection=getIndex(headers,'section');
+                const idxMonth=getIndex(headers,'month'); const idxRoom=getIndex(headers,'room');
+                const idxUserStatus=getIndex(headers,'user status'); const idxMat=getIndex(headers,'mat');
+                const idxCph=getIndex(headers,'cph'); const idxSection=getIndex(headers,'section');
                 const idxStatusAmt=getIndex(headers,'status amt');
                 if(idxMonth>=0 && fMonth && !(r.cells[idxMonth]?.textContent.toLowerCase()||'').includes(fMonth))show=false;
                 if(idxRoom>=0 && fRoom && !(r.cells[idxRoom]?.textContent.toLowerCase()||'').includes(fRoom))show=false;
@@ -291,109 +272,107 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
             .map(r=>Array.from(r.cells).map(c=>c.textContent));
         buildTableFromJson(mTable,headers,rows);
     }
-    document.querySelectorAll("#panel-monthly .filter-container input[type=text]")
-        .forEach(inp=>inp.addEventListener('input',debounce(buildMonthlyTable,120)));
+    document.querySelectorAll("#panel-monthly .filter-container input[type=text]").forEach(inp=>inp.addEventListener('input',debounce(buildMonthlyTable,120)));
     document.getElementById('m-clear').addEventListener('click',()=>{
         document.querySelectorAll("#panel-monthly .filter-container input[type=text]").forEach(i=>i.value='');
         buildMonthlyTable();
     });
 })();
 </script>
-
-  <!-- ================= Menu 5: Add WO Monthly ================= -->
-<div id="panel-5" class="panel">
+  <!-- PANEL 5: Add WO Monthly -->
+<div class="panel" id="panel-addmonthly">
   <h3>Add WO Monthly</h3>
-  
-  <textarea id="addOrdersInput" rows="5" cols="40"
-    placeholder="Paste multiple Order numbers (one per line)"></textarea><br><br>
-
-  <button onclick="addOrders()">Add Orders</button>
-  <button onclick="saveMonthlyJSON()">Save JSON</button>
-  <button onclick="loadMonthlyJSON()">Load JSON</button>
-
+  <textarea id="addOrdersInput" rows="5" cols="40" 
+    placeholder="Masukkan Order number, satu per baris"></textarea><br><br>
+  <button class="btn" onclick="addOrders()">Add Orders</button>
+  <button class="btn" onclick="saveMonthlyJSON()">Save JSON</button>
+  <button class="btn" onclick="loadMonthlyJSON()">Load JSON</button>
   <div id="monthlyTableContainer" style="margin-top:20px;"></div>
 </div>
 
 <script>
-// ===== Data array for Monthly =====
-let aData = [];
+// ====== Menu 5: Add WO Monthly ======
+let aData=[];
 
-// ===== Add multiple Orders =====
 function addOrders(){
-  const input = document.getElementById("addOrdersInput").value;
-  const orders = input.split(/\s+/).filter(v => v.trim() !== "");
-  if(orders.length === 0){ 
-    alert("Masukkan minimal satu Order!"); 
-    return; 
-  }
-
-  orders.forEach(order => {
-    const orderVal = String(order).trim();
-    const wo = workOrders.find(o => String(o.order).trim() === orderVal);
-    if(wo){
-      aData.push([wo.room, wo.order, wo.description, wo.mat, "", "", {editing:false}]);
+  const input=document.getElementById("addOrdersInput").value;
+  const orders=input.split(/\s+/).filter(v=>v.trim()!=="");
+  if(orders.length===0){alert("Masukkan minimal satu Order!");return;}
+  
+  orders.forEach(order=>{
+    const orderVal=String(order).trim();
+    // cari di Work Order (menu 1)
+    if(!wTable || !wTable.tBodies[0]){alert("Work Order belum diupload!");return;}
+    const rows=Array.from(wTable.tBodies[0].rows);
+    const idxOrder=getIndex(wHeaders,'order');
+    let found=null;
+    rows.forEach(r=>{
+      const val=(r.cells[idxOrder]?.textContent||"").trim();
+      if(val===orderVal) found=r;
+    });
+    if(found){
+      const idxRoom=getIndex(wHeaders,'room');
+      const idxMat=getIndex(wHeaders,'mat');
+      const idxDesc=getIndex(wHeaders,'description');
+      aData.push([
+        found.cells[idxRoom]?.textContent||"",
+        found.cells[idxOrder]?.textContent||"",
+        found.cells[idxDesc]?.textContent||"",
+        found.cells[idxMat]?.textContent||"",
+        "", ""  // month, remark
+      ]);
     }else{
-      alert("Order '" + orderVal + "' tidak ditemukan di Work Order!");
+      alert("Order '"+orderVal+"' tidak ditemukan di Work Order!");
     }
   });
-
-  document.getElementById("addOrdersInput").value = "";
+  document.getElementById("addOrdersInput").value="";
   buildAddMonthlyTable();
 }
 
-// ===== Build table =====
 function buildAddMonthlyTable(){
-  const container = document.getElementById("monthlyTableContainer");
-  if(!container) return;
-  let html = "<table border='1' cellpadding='5'><tr><th>Room</th><th>Order</th><th>Description</th><th>MAT</th><th>Month</th><th>Remark</th></tr>";
-  
+  const container=document.getElementById("monthlyTableContainer");
+  let html="<table border='1' cellpadding='5'><tr><th>Room</th><th>Order</th><th>Description</th><th>MAT</th><th>Month</th><th>Remark</th></tr>";
   for(let i=0;i<aData.length;i++){
-    const row = aData[i];
-    html += "<tr>";
-    html += "<td>"+row[0]+"</td>";
-    html += "<td>"+row[1]+"</td>";
-    html += "<td>"+row[2]+"</td>";
-    html += "<td>"+row[3]+"</td>";
-    html += "<td><input type='text' data-edit='Month' data-idx='"+i+"' value='"+(row[4]||"")+"'></td>";
-    html += "<td><input type='text' data-edit='Remark' data-idx='"+i+"' value='"+(row[5]||"")+"'></td>";
-    html += "</tr>";
+    const row=aData[i];
+    html+="<tr>";
+    html+="<td>"+row[0]+"</td>";
+    html+="<td>"+row[1]+"</td>";
+    html+="<td>"+row[2]+"</td>";
+    html+="<td>"+row[3]+"</td>";
+    html+="<td><input type='text' data-edit='Month' data-idx='"+i+"' value='"+(row[4]||"")+"'></td>";
+    html+="<td><input type='text' data-edit='Remark' data-idx='"+i+"' value='"+(row[5]||"")+"'></td>";
+    html+="</tr>";
   }
-  html += "</table>";
-  container.innerHTML = html;
+  html+="</table>";
+  container.innerHTML=html;
 
-  // attach event for inputs
-  const inputs = container.querySelectorAll("input[data-edit]");
+  const inputs=container.querySelectorAll("input[data-edit]");
   inputs.forEach(inp=>{
     inp.addEventListener("input",function(){
-      const idx = this.getAttribute("data-idx");
-      const field = this.getAttribute("data-edit");
-      if(field==="Month") aData[idx][4] = this.value;
-      if(field==="Remark") aData[idx][5] = this.value;
+      const idx=this.getAttribute("data-idx");
+      const field=this.getAttribute("data-edit");
+      if(field==="Month") aData[idx][4]=this.value;
+      if(field==="Remark") aData[idx][5]=this.value;
     });
   });
 }
 
-// ===== Save JSON =====
 function saveMonthlyJSON(){
-  const blob = new Blob([JSON.stringify(aData)], {type:"application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "monthly.json";
-  a.click();
+  const blob=new Blob([JSON.stringify(aData)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download="monthly.json";a.click();
   URL.revokeObjectURL(url);
 }
 
-// ===== Load JSON =====
 function loadMonthlyJSON(){
-  const inp = document.createElement("input");
-  inp.type = "file";
-  inp.accept = ".json";
-  inp.onchange = e => {
-    const file = e.target.files[0];
-    const reader = new FileReader();
-    reader.onload = evt => {
-      aData = JSON.parse(evt.target.result);
+  const inp=document.createElement("input");
+  inp.type="file";inp.accept=".json";
+  inp.onchange=e=>{
+    const file=e.target.files[0];
+    const reader=new FileReader();
+    reader.onload=evt=>{
+      aData=JSON.parse(evt.target.result);
       buildAddMonthlyTable();
     };
     reader.readAsText(file);
