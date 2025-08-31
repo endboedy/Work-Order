@@ -279,91 +279,131 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
     });
 })();
 </script>
-<!-- ================= MENU 5: ADD WO MONTHLY ================= -->
-<div class="tab-content" id="content-addmonthly" style="display:none;">
-  <h3>Add WO Monthly</h3>
-  <div>
-    <label>Order:</label>
-    <input type="text" id="orderInput">
-    <label>Month:</label>
-    <input type="text" id="monthInput" placeholder="ex: August">
-    <label>Reman:</label>
-    <input type="text" id="remanInput">
-    <button onclick="addOrder()">Add Order</button>
-  </div>
-
-  <div id="orderList" style="margin-top:15px;">
-    <!-- List WO Monthly akan muncul di sini -->
-  </div>
-</div>
-
-<script>
-  let orders = [];
-  let orderId = 1;
-
-  function renderOrders() {
-    const container = document.getElementById("orderList");
-    container.innerHTML = ""; // reset isi
-
-    if (orders.length === 0) {
-      container.innerHTML = "<p><i>No WO Monthly data.</i></p>";
-      return;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Work Order EM</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+    .tab {
+      padding: 8px 15px;
+      border: 1px solid #ccc;
+      cursor: pointer;
+      border-radius: 6px;
     }
+    .tab.active { background: #007BFF; color: white; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    input { margin: 5px; padding: 5px; }
+    button { padding: 5px 10px; cursor: pointer; }
+    table { border-collapse: collapse; margin-top: 10px; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+  </style>
+</head>
+<body>
+  <h2>📋 Work Order EM</h2>
 
-    orders.forEach((order, index) => {
-      const div = document.createElement("div");
-      div.style.marginBottom = "8px";
-      div.innerHTML = `
-        <b>${index+1}. ${order.order}</b> | ${order.month} | Reman: ${order.reman} 
-        <button onclick="editOrder(${order.id})">Edit</button>
-        <button onclick="deleteOrder(${order.id})">Delete</button>
-      `;
-      container.appendChild(div);
+  <!-- ================= TAB MENU ================= -->
+  <div class="tabs">
+    <div class="tab active" id="tab-work">Work Order</div>
+    <div class="tab" id="tab-detail">Detail Part</div>
+    <div class="tab" id="tab-ext">External Job</div>
+    <div class="tab" id="tab-monthly">List WO Monthly</div>
+    <div class="tab" id="tab-addmonthly">Add WO Monthly</div>
+  </div>
+
+  <!-- ================= PANEL 1 ================= -->
+  <div class="panel active" id="panel-work">
+    <h3>Work Order</h3>
+    <p>Isi tabel Work Order kamu di sini...</p>
+  </div>
+
+  <!-- ================= PANEL 2 ================= -->
+  <div class="panel" id="panel-detail">
+    <h3>Detail Part</h3>
+    <p>Isi tabel Detail Part di sini...</p>
+  </div>
+
+  <!-- ================= PANEL 3 ================= -->
+  <div class="panel" id="panel-ext">
+    <h3>External Job</h3>
+    <p>Isi tabel External Job di sini...</p>
+  </div>
+
+  <!-- ================= PANEL 4 ================= -->
+  <div class="panel" id="panel-monthly">
+    <h3>List WO Monthly</h3>
+    <p>Daftar WO Monthly akan ditampilkan di sini...</p>
+  </div>
+
+  <!-- ================= PANEL 5: ADD WO MONTHLY ================= -->
+  <div class="panel" id="panel-addmonthly">
+    <h3>Add WO Monthly</h3>
+    <div>
+      <label>Order:</label>
+      <input type="text" id="orderInput">
+      <label>Month:</label>
+      <input type="text" id="monthInput" placeholder="ex: August">
+      <label>Reman:</label>
+      <input type="text" id="remanInput">
+      <button onclick="addOrder()">Add Order</button>
+    </div>
+
+    <div id="orderList" style="margin-top:15px;">
+      <!-- List WO Monthly akan muncul di sini -->
+    </div>
+  </div>
+
+  <script>
+    // ----------------- Tab Switch -----------------
+    const tabs=document.querySelectorAll('.tab');
+    const panels=document.querySelectorAll('.panel');
+
+    tabs.forEach(tab=>{
+      tab.addEventListener('click',()=>{
+        tabs.forEach(t=>t.classList.remove('active'));
+        tab.classList.add('active');
+        panels.forEach(p=>p.classList.remove('active'));
+        const pid='panel-'+tab.id.split('-')[1];
+        document.getElementById(pid).classList.add('active');
+      });
     });
-  }
 
-  function addOrder() {
-    const order = document.getElementById("orderInput").value.trim();
-    const month = document.getElementById("monthInput").value.trim();
-    const reman = document.getElementById("remanInput").value.trim();
+    // ----------------- Add WO Monthly -----------------
+    function addOrder(){
+      const order=document.getElementById("orderInput").value;
+      const month=document.getElementById("monthInput").value;
+      const reman=document.getElementById("remanInput").value;
 
-    if (!order || !month) {
-      alert("Order dan Month wajib diisi!");
-      return;
+      if(order && month && reman){
+        const list=document.getElementById("orderList");
+
+        if(!document.getElementById("orderTable")){
+          const table=document.createElement("table");
+          table.id="orderTable";
+          table.innerHTML="<tr><th>Order</th><th>Month</th><th>Reman</th></tr>";
+          list.appendChild(table);
+        }
+
+        const table=document.getElementById("orderTable");
+        const row=table.insertRow();
+        row.insertCell(0).textContent=order;
+        row.insertCell(1).textContent=month;
+        row.insertCell(2).textContent=reman;
+
+        document.getElementById("orderInput").value="";
+        document.getElementById("monthInput").value="";
+        document.getElementById("remanInput").value="";
+      } else {
+        alert("Mohon lengkapi semua field!");
+      }
     }
+  </script>
+</body>
+</html>
 
-    orders.push({ id: orderId++, order, month, reman });
-    renderOrders();
-
-    // reset input
-    document.getElementById("orderInput").value = "";
-    document.getElementById("monthInput").value = "";
-    document.getElementById("remanInput").value = "";
-  }
-
-  function editOrder(id) {
-    const order = orders.find(o => o.id === id);
-    if (!order) return;
-
-    const newOrder = prompt("Edit Order:", order.order);
-    if (newOrder !== null) order.order = newOrder;
-
-    const newMonth = prompt("Edit Month:", order.month);
-    if (newMonth !== null) order.month = newMonth;
-
-    const newReman = prompt("Edit Reman:", order.reman);
-    if (newReman !== null) order.reman = newReman;
-
-    renderOrders();
-  }
-
-  function deleteOrder(id) {
-    if (confirm("Yakin mau hapus data ini?")) {
-      orders = orders.filter(o => o.id !== id);
-      renderOrders();
-    }
-  }
-</script>
-
-  </body>
+  
+    </body>
 </html>
