@@ -281,104 +281,149 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
 </script>
 
   <!-- ============== MENU 5 : Add WO Monthly ================= -->
-<div id="panel-addmonthly" class="panel">
+<div id="menu5" style="display:none;">
   <h3>Add WO Monthly</h3>
-
-  <!-- Input Order Numbers -->
-  <textarea id="addOrdersInput" placeholder="Paste multiple Order numbers (pisahkan spasi / enter)" rows="3" style="width:100%"></textarea><br>
-  <button class="btn" onclick="addOrders()">Add Orders</button>
-  <button class="btn" onclick="saveJson5()">Save JSON</button>
-  <button class="btn" onclick="loadJson5()">Load JSON</button>
-
-  <!-- Filter -->
-  <div id="addMonthlyFilters" style="margin-top:10px;">
-      Filter Room: <input type="text" id="filterRoom5" oninput="applyAddMonthlyFilters()">
-      Filter Order: <input type="text" id="filterOrder5" oninput="applyAddMonthlyFilters()">
-  </div>
-
-  <!-- Tabel -->
-  <div id="addOrdersTable"></div>
+  <textarea id="orderInput" placeholder="Paste multiple Order numbers (pisahkan spasi / enter)" style="width:100%; height:60px;"></textarea><br>
+  <button onclick="addOrders()">Add Orders</button>
+  <button onclick="saveJSON()">Save JSON</button>
+  <button onclick="loadJSON()">Load JSON</button>
+  <br><br>
+  Filter Room: <input type="text" id="filterRoom" onkeyup="renderTable()">
+  Filter Order: <input type="text" id="filterOrder" onkeyup="renderTable()">
+  <br><br>
+  
+  <table border="1" width="100%" id="orderTable">
+    <thead>
+      <tr>
+        <th>No</th>
+        <th>Room</th>
+        <th>Order</th>
+        <th>MAT</th>
+        <th>Description</th>
+        <th>Month</th>
+        <th>Reman</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 </div>
 
 <script>
-// === Data khusus Menu 5 ===
-let aData = [];
+let menu1Data = [
+  // contoh dummy data menu 1
+  { order: "4700735829", room: "A12", mat: "MAT-001", description: "Hydraulic Pump" },
+  { order: "4700735830", room: "B21", mat: "MAT-002", description: "Engine Overhaul" }
+];
 
-// Fungsi bangun tabel
-function buildAddMonthlyTable(data=aData){
-  let html = "<table class='data-table'><tr><th>No</th><th>Order</th><th>Room</th><th>Action</th></tr>";
-  data.forEach((row,i)=>{
-    html += `<tr>
-      <td>${i+1}</td>
-      <td contenteditable oninput="aData[${i}].order=this.innerText">${row.order}</td>
-      <td contenteditable oninput="aData[${i}].room=this.innerText">${row.room}</td>
-      <td><button onclick="deleteRow5(${i})">❌</button></td>
-    </tr>`;
+let monthlyOrders = [];
+
+function lookupMenu1(order) {
+  return menu1Data.find(d => d.order === order) || {};
+}
+
+function addOrders() {
+  let input = document.getElementById("orderInput").value.trim();
+  if (!input) return;
+  let orders = input.split(/\s+/);
+  
+  orders.forEach(o => {
+    if (o && !monthlyOrders.some(m => m.order === o)) {
+      let ref = lookupMenu1(o);
+      monthlyOrders.push({
+        order: o,
+        room: ref.room || "",
+        mat: ref.mat || "",
+        description: ref.description || "",
+        month: "",
+        reman: "",
+        editing: false
+      });
+    }
   });
-  html += "</table>";
-  document.getElementById("addOrdersTable").innerHTML = html;
+  document.getElementById("orderInput").value = "";
+  renderTable();
 }
 
-// Tambah Orders dari textarea
-function addOrders(){
-  const input = document.getElementById("addOrdersInput").value.trim();
-  if(!input) return;
-  const orders = input.split(/\s+/);
-  orders.forEach(o=>{
-    if(o) aData.push({order:o, room:""});
-  });
-  document.getElementById("addOrdersInput").value="";
-  buildAddMonthlyTable();
+function renderTable() {
+  let tbody = document.querySelector("#orderTable tbody");
+  tbody.innerHTML = "";
+
+  let filterRoom = document.getElementById("filterRoom").value.toLowerCase();
+  let filterOrder = document.getElementById("filterOrder").value.toLowerCase();
+
+  monthlyOrders
+    .filter(o => 
+      (!filterRoom || (o.room && o.room.toLowerCase().includes(filterRoom))) &&
+      (!filterOrder || (o.order && o.order.toLowerCase().includes(filterOrder)))
+    )
+    .forEach((o, i) => {
+      let tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${i+1}</td>
+        <td>${o.room || ""}</td>
+        <td>${o.order}</td>
+        <td>${o.mat || ""}</td>
+        <td>${o.description || ""}</td>
+        <td>${o.editing ? `<input value="${o.month}" onchange="monthlyOrders[${i}].month=this.value">` : o.month}</td>
+        <td>${o.editing ? `<input value="${o.reman}" onchange="monthlyOrders[${i}].reman=this.value">` : o.reman}</td>
+        <td>
+          ${o.editing 
+            ? `<a href='#' onclick='saveRow(${i})'>Save</a> | <a href='#' onclick='cancelEdit(${i})'>Cancel</a> | <a href='#' onclick='deleteRow(${i})'>Delete</a>`
+            : `<a href='#' onclick='editRow(${i})'>Edit</a> | <a href='#' onclick='deleteRow(${i})'>Delete</a>`
+          }
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
 }
 
-// Hapus row
-function deleteRow5(i){
-  aData.splice(i,1);
-  buildAddMonthlyTable();
+function editRow(i) {
+  monthlyOrders[i].editing = true;
+  renderTable();
 }
 
-// Filter Room & Order
-function applyAddMonthlyFilters(){
-  const fRoom=document.getElementById("filterRoom5").value.toLowerCase();
-  const fOrder=document.getElementById("filterOrder5").value.toLowerCase();
-  const filtered=aData.filter(r=>
-    r.room.toLowerCase().includes(fRoom) && r.order.toLowerCase().includes(fOrder)
-  );
-  buildAddMonthlyTable(filtered);
+function saveRow(i) {
+  monthlyOrders[i].editing = false;
+  renderTable();
 }
 
-// Save JSON
-function saveJson5(){
-  const blob=new Blob([JSON.stringify(aData)],{type:"application/json"});
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="menu5_data.json";
-  a.click();
+function cancelEdit(i) {
+  monthlyOrders[i].editing = false;
+  renderTable();
 }
 
-// Load JSON
-function loadJson5(){
-  const inp=document.createElement("input");
-  inp.type="file"; inp.accept=".json";
-  inp.onchange=e=>{
-    const file=e.target.files[0];
-    if(!file) return;
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      try{
-        aData=JSON.parse(ev.target.result);
-        buildAddMonthlyTable();
-      }catch(err){alert("Invalid JSON");}
+function deleteRow(i) {
+  if (confirm("Delete this order?")) {
+    monthlyOrders.splice(i,1);
+    renderTable();
+  }
+}
+
+function saveJSON() {
+  let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(monthlyOrders));
+  let dl = document.createElement("a");
+  dl.setAttribute("href", dataStr);
+  dl.setAttribute("download", "monthlyOrders.json");
+  dl.click();
+}
+
+function loadJSON() {
+  let input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".json";
+  input.onchange = e => {
+    let file = e.target.files[0];
+    let reader = new FileReader();
+    reader.onload = event => {
+      monthlyOrders = JSON.parse(event.target.result);
+      renderTable();
     };
     reader.readAsText(file);
   };
-  inp.click();
+  input.click();
 }
-
-// === Trigger build ketika tab dibuka ===
-document.getElementById("tab-addmonthly").addEventListener("click",function(){
-  buildAddMonthlyTable();
-});
 </script>  
-  </body>
+</body>
 </html>
