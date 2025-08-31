@@ -279,21 +279,32 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
     });
 })();
 </script>
-<!-- ============== MENU 5 : Add WO Monthly ================= -->
+
+  <!-- ============== MENU 5 : Add WO Monthly ================= -->
 <div id="panel-5" class="panel">
   <h3>Add WO Monthly</h3>
-  <input type="text" id="addOrdersInput" placeholder="Masukkan No Order, pisahkan spasi">
-  <button onclick="addOrders()">Add Orders</button>
+  <textarea id="addOrdersInput" placeholder="Paste multiple Order numbers (pisahkan spasi / enter)" rows="3" style="width:100%"></textarea><br>
+  <button class="btn" onclick="addOrders()">Add Orders</button>
+  <button class="btn" onclick="saveJson5()">Save JSON</button>
+  <button class="btn" onclick="loadJson5()">Load JSON</button>
+
+  <div id="addMonthlyFilters" style="margin-top:10px;">
+      Filter Room: <input type="text" id="filterRoom5" oninput="applyAddMonthlyFilters()">
+      Filter Order: <input type="text" id="filterOrder5" oninput="applyAddMonthlyFilters()">
+  </div>
+
   <div id="addOrdersTable"></div>
 </div>
 
 <script>
-let aData = [];  // data khusus menu 5
+// === Data khusus Menu 5 ===
+let aData = [];
 
+// === Build Table ===
 function buildAddMonthlyTable(){
   const container = document.getElementById("addOrdersTable");
-  if(!container || !document.getElementById("panel-5").classList.contains("active")) return;  
-  // 👆 tabel hanya dibangun jika menu 5 aktif
+  if(!container) return;
+  if(!document.getElementById("panel-5").classList.contains("active")) return;
 
   let html = "<table border='1' cellpadding='5' cellspacing='0'><thead><tr>";
   const headers = ["Room","Order","Description","MAT","Month","Remark"];
@@ -327,6 +338,7 @@ function buildAddMonthlyTable(){
   });
 }
 
+// === Add Orders ===
 function addOrders(){
   const input = document.getElementById("addOrdersInput").value;
   const orders = input.split(/\s+/).filter(v=>v.trim()!=="");
@@ -336,6 +348,7 @@ function addOrders(){
     const orderVal = String(order).trim();
     let room="", mat="", desc="";
 
+    // lookup dari Work Order table jika ada
     if(wTable && wTable.tBodies[0]){ 
       const rows = Array.from(wTable.tBodies[0].rows);
       const idxOrder=getIndex(wHeaders,'order');
@@ -352,12 +365,63 @@ function addOrders(){
       });
     }
 
+    // tetap masuk meski lookup kosong
     aData.push([room, orderVal, desc, mat, "", ""]);
   });
 
   document.getElementById("addOrdersInput").value = "";
   buildAddMonthlyTable();
 }
-</script>  
-</body>
+
+// === Filter ===
+function applyAddMonthlyFilters(){
+  const fRoom = document.getElementById("filterRoom5").value.toLowerCase();
+  const fOrder = document.getElementById("filterOrder5").value.toLowerCase();
+  const container = document.getElementById("addOrdersTable");
+  if(!container) return;
+
+  const rows = container.querySelectorAll("tbody tr");
+  rows.forEach(row=>{
+    const tds = row.querySelectorAll("td");
+    const roomVal = tds[0].querySelector("input").value.toLowerCase();
+    const orderVal = tds[1].textContent.toLowerCase();
+    if(roomVal.includes(fRoom) && orderVal.includes(fOrder)){
+      row.style.display = "";
+    }else{
+      row.style.display = "none";
+    }
+  });
+}
+
+// === Save & Load JSON ===
+function saveJson5(){
+  const blob = new Blob([JSON.stringify(aData)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="menu5_data.json";
+  a.click();
+}
+
+function loadJson5(){
+  const inp=document.createElement("input");
+  inp.type="file"; inp.accept="application/json";
+  inp.onchange=e=>{
+    const file=e.target.files[0];
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{ aData=JSON.parse(ev.target.result)||[]; }
+      catch{ aData=[]; }
+      buildAddMonthlyTable();
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
+}
+
+// === Trigger build ketika tab 5 dibuka ===
+document.getElementById("tab-5").addEventListener("click",function(){
+  buildAddMonthlyTable();
+});
+</script>
+  </body>
 </html>
