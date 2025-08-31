@@ -283,130 +283,126 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
     });
 })();
 </script>
-
-<!-- PANEL 5: Add WO Monthly -->
-<div id="menu5" class="tabcontent">
-  <h3>Add WO Monthly</h3>
-  <textarea id="addOrdersInput" placeholder="Paste multiple Order numbers (one per line)"></textarea><br>
-  <button class="btn" onclick="addOrders()">Add Orders</button>
-<!-- === MENU 5: Add WO Monthly === -->
-<div id="menu5" class="tabcontent">
+<!-- ================= MENU 5 : ADD WO MONTHLY ================= -->
+<div id="panel-5" class="panel">
   <h3>Add WO Monthly</h3>
 
-  <!-- Input Orders -->
-  <textarea id="addOrdersInput" placeholder="Paste multiple Order numbers (one per line)"></textarea><br>
+  <!-- Input Order -->
+  <textarea id="addOrdersInput" placeholder="Paste multiple Order numbers (one per line)" rows="4" cols="40"></textarea><br>
   <button class="btn" onclick="addOrders()">Add Orders</button>
   <button class="btn" onclick="saveJson()">Save JSON</button>
   <button class="btn" onclick="loadJson()">Load JSON</button>
 
-  <!-- Filters khusus menu 5 -->
-  <div style="margin-top:10px; margin-bottom:5px;">
-      <b>Filter Room:</b> 
-      <input type="text" id="filterRoom5" oninput="applyAddMonthlyFilters()">
-      <b>Filter Order:</b> 
-      <input type="text" id="filterOrder5" oninput="applyAddMonthlyFilters()">
+  <!-- Filter Section (posisi di atas tabel) -->
+  <div id="addMonthlyFilters" style="margin-top:10px; margin-bottom:10px;">
+    Filter Room: <input type="text" id="filterRoom" oninput="applyAddMonthlyFilters()">
+    Filter Order: <input type="text" id="filterOrder" oninput="applyAddMonthlyFilters()">
   </div>
 
-  <!-- Tabel hasil -->
-  <table id="addMonthlyTable" border="1" style="width:100%; border-collapse:collapse;"></table>
+  <!-- Tabel hasil Add Orders -->
+  <table id="addMonthlyTable" border="1" cellspacing="0" cellpadding="4" style="width:100%; border-collapse:collapse;"></table>
 </div>
 
 <script>
-  // === Data Array untuk Menu 5 ===
-  let aData = [];
+// ================= DATA STORAGE MENU 5 =================
+let aData = [];  // data WO Monthly yang ditambahkan manual
 
-  // === Add multiple Orders ===
-  function addOrders(){
-      const input = document.getElementById("addOrdersInput").value;
-      const orders = input.split(/\s+/).filter(v => v.trim() !== "");
-      if(orders.length === 0){ 
-          alert("Masukkan minimal satu Order!"); 
-          return; 
-      }
+// ================= BUILD TABLE =================
+function buildAddMonthlyTable(){
+    const table = document.getElementById("addMonthlyTable");
+    table.innerHTML = "";
 
-      orders.forEach(order => {
-          const orderVal = String(order).trim();
-          const wo = workOrders.find(o => String(o.order).trim() === orderVal);
-          if(wo){
-              aData.push([wo.room, wo.order, wo.description, wo.mat, "", "", {editing:false}]);
-          }else{
-              alert("Order '" + orderVal + "' tidak ditemukan di Work Order!");
-          }
-      });
+    // header
+    const header = table.insertRow();
+    ["Room","Order","Description","MAT","Month","Reman"].forEach(h=>{
+        const th = document.createElement("th");
+        th.textContent = h;
+        header.appendChild(th);
+    });
 
-      document.getElementById("addOrdersInput").value = "";
-      buildAddMonthlyTable();
-  }
+    // rows
+    aData.forEach((row,i)=>{
+        const tr = table.insertRow();
+        tr.insertCell().textContent = row[0];  // room
+        tr.insertCell().textContent = row[1];  // order
+        tr.insertCell().textContent = row[2];  // description
+        tr.insertCell().textContent = row[3];  // mat
 
-  // === Build Table khusus menu 5 ===
-  function buildAddMonthlyTable(){
-      const table = document.getElementById("addMonthlyTable");
-      table.innerHTML = `
-        <tr>
-          <th>Room</th>
-          <th>Order</th>
-          <th>Description</th>
-          <th>MAT</th>
-          <th>Extra1</th>
-          <th>Extra2</th>
-          <th>Aksi</th>
-        </tr>
-      `;
+        // Month input
+        const monthTd = tr.insertCell();
+        monthTd.innerHTML = <input type="text" data-edit="Month" data-idx="${i}" value="${row[4]}">;
 
-      aData.forEach((row, idx) => {
-          let tr = document.createElement("tr");
-          row.slice(0,6).forEach(cell => {
-              let td = document.createElement("td");
-              td.textContent = cell;
-              tr.appendChild(td);
-          });
+        // Reman input
+        const remanTd = tr.insertCell();
+        remanTd.innerHTML = <input type="text" data-edit="Reman" data-idx="${i}" value="${row[5]}">;
+    });
+}
 
-          // tombol hapus
-          let tdAct = document.createElement("td");
-          let btn = document.createElement("button");
-          btn.textContent = "Hapus";
-          btn.onclick = () => { aData.splice(idx,1); buildAddMonthlyTable(); };
-          tdAct.appendChild(btn);
-          tr.appendChild(tdAct);
+// ================= ADD ORDERS =================
+function addOrders(){
+    const input = document.getElementById("addOrdersInput").value;
+    const orders = input.split(/\s+/).filter(v => v.trim() !== "");
+    if(orders.length === 0){ alert("Masukkan minimal satu Order!"); return; }
 
-          table.appendChild(tr);
-      });
-  }
+    orders.forEach(order => {
+        const orderVal = String(order).trim();
+        const wo = workOrders.find(o => String(o.order).trim() === orderVal);
+        if(wo){
+            aData.push([wo.room, wo.order, wo.description, wo.mat, "", "", {editing:false}]);
+        }else{
+            alert("Order '" + orderVal + "' tidak ditemukan di Work Order!");
+        }
+    });
 
-  // === Filter Table khusus menu 5 ===
-  function applyAddMonthlyFilters(){
-      const fRoom = document.getElementById("filterRoom5").value.toLowerCase();
-      const fOrder = document.getElementById("filterOrder5").value.toLowerCase();
+    document.getElementById("addOrdersInput").value = "";
+    buildAddMonthlyTable();
+}
 
-      const rows = document.querySelectorAll("#addMonthlyTable tr");
-      rows.forEach((row, i) => {
-          if(i === 0) return; // skip header
-          const room = row.cells[0].textContent.toLowerCase();
-          const order = row.cells[1].textContent.toLowerCase();
-          if(room.includes(fRoom) && order.includes(fOrder)){
-              row.style.display = "";
-          } else {
-              row.style.display = "none";
-          }
-      });
-  }
+// ================= FILTER =================
+function applyAddMonthlyFilters(){
+    const fRoom = document.getElementById("filterRoom").value.toLowerCase();
+    const fOrder = document.getElementById("filterOrder").value.toLowerCase();
 
-  // === Save / Load JSON (LocalStorage) ===
-  function saveJson(){
-      localStorage.setItem("woMonthly", JSON.stringify(aData));
-      alert("Data berhasil disimpan!");
-  }
+    const table = document.getElementById("addMonthlyTable");
+    for(let i=1;i<table.rows.length;i++){
+        const room = table.rows[i].cells[0].textContent.toLowerCase();
+        const order = table.rows[i].cells[1].textContent.toLowerCase();
+        table.rows[i].style.display =
+            (room.includes(fRoom) && order.includes(fOrder)) ? "" : "none";
+    }
+}
 
-  function loadJson(){
-      const data = localStorage.getItem("woMonthly");
-      if(data){
-          aData = JSON.parse(data);
-          buildAddMonthlyTable();
-          alert("Data berhasil dimuat!");
-      }else{
-          alert("Belum ada data tersimpan!");
-      }
-  }
+// ================= SAVE / LOAD JSON =================
+function saveJson(){
+    const blob = new Blob([JSON.stringify(aData)], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "wo_monthly.json";
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function loadJson(){
+    const inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = "application/json";
+    inp.onchange = e=>{
+        const file = e.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = evt=>{
+            try{
+                aData = JSON.parse(evt.target.result);
+                buildAddMonthlyTable();
+            }catch(err){
+                alert("Gagal membaca file JSON!");
+            }
+        };
+        reader.readAsText(file);
+    };
+    inp.click();
+}
 </script>
 </body>
 </html>
