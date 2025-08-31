@@ -110,19 +110,22 @@ function debounce(fn,wait){let t;return function(...a){clearTimeout(t);t=setTime
 function getIndex(headers,keyword){keyword=(keyword||'').toLowerCase();return headers.findIndex(h=>(h||'').toLowerCase().includes(keyword));}
 
 // ----------------- Tab Switch -----------------
-const tabs=document.querySelectorAll('.tab');
-const panels=document.querySelectorAll('.panel');
+const tabs = document.querySelectorAll('.tab');
+const panels = document.querySelectorAll('.panel');
 
-tabs.forEach(tab=>{
-  tab.addEventListener('click',()=>{
-    tabs.forEach(t=>t.classList.remove('active'));
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    // reset
+    tabs.forEach(t => t.classList.remove('active'));
+    panels.forEach(p => p.classList.remove('active'));
+
+    // aktifkan tab & panel target
     tab.classList.add('active');
-
-    panels.forEach(p=>p.classList.remove('active'));
-    const pid = tab.getAttribute("data-target");
-    document.getElementById(pid).classList.add('active');
+    const targetId = tab.getAttribute("data-target");
+    document.getElementById(targetId).classList.add('active');
   });
 });
+  
 // ----------------- Build Table -----------------
 function buildTableFromJson(tableEl,headers,rows){
     while(tableEl.firstChild)tableEl.removeChild(tableEl.firstChild);
