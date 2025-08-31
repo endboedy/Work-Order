@@ -299,125 +299,106 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
     });
 })();
 </script>
-<!-- ================= MENU 5 : ADD WO MONTHLY ================= -->
+
+  <!-- ================= Menu 5: Add WO Monthly ================= -->
 <div id="panel-5" class="panel">
   <h3>Add WO Monthly</h3>
+  
+  <textarea id="addOrdersInput" rows="5" cols="40"
+    placeholder="Paste multiple Order numbers (one per line)"></textarea><br><br>
 
-  <!-- Input Order -->
-  <textarea id="addOrdersInput" placeholder="Paste multiple Order numbers (one per line)" rows="4" cols="40"></textarea><br>
-  <button class="btn" onclick="addOrders()">Add Orders</button>
-  <button class="btn" onclick="saveJson()">Save JSON</button>
-  <button class="btn" onclick="loadJson()">Load JSON</button>
+  <button onclick="addOrders()">Add Orders</button>
+  <button onclick="saveMonthlyJSON()">Save JSON</button>
+  <button onclick="loadMonthlyJSON()">Load JSON</button>
 
-  <!-- Filter Section (posisi di atas tabel) -->
-  <div id="addMonthlyFilters" style="margin-top:10px; margin-bottom:10px;">
-    Filter Room: <input type="text" id="filterRoom" oninput="applyAddMonthlyFilters()">
-    Filter Order: <input type="text" id="filterOrder" oninput="applyAddMonthlyFilters()">
-  </div>
-
-  <!-- Tabel hasil Add Orders -->
-  <table id="addMonthlyTable" border="1" cellspacing="0" cellpadding="4" style="width:100%; border-collapse:collapse;"></table>
+  <div id="monthlyTableContainer" style="margin-top:20px;"></div>
 </div>
 
 <script>
-// ================= DATA STORAGE MENU 5 =================
-let aData = [];  // data WO Monthly yang ditambahkan manual
+// ===== Data array for Monthly =====
+let aData = [];
 
-// ================= BUILD TABLE =================
-function buildAddMonthlyTable(){
-    const table = document.getElementById("addMonthlyTable");
-    table.innerHTML = "";
-
-    // header
-    const header = table.insertRow();
-    ["Room","Order","Description","MAT","Month","Reman"].forEach(h=>{
-        const th = document.createElement("th");
-        th.textContent = h;
-        header.appendChild(th);
-    });
-
-    // rows
-    aData.forEach((row,i)=>{
-    const tr = table.insertRow();
-    tr.insertCell().textContent = row[0];  // room
-    tr.insertCell().textContent = row[1];  // order
-    tr.insertCell().textContent = row[2];  // description
-    tr.insertCell().textContent = row[3];  // mat
-
-    // Month input
-    const monthTd = tr.insertCell();
-    monthTd.innerHTML = '<input type="text" data-edit="Month" data-idx="' + i + '" value="' + (row[4]||"") + '">';
-
-    // Reman input
-    const remanTd = tr.insertCell();
-    remanTd.innerHTML = '<input type="text" data-edit="Reman" data-idx="' + i + '" value="' + (row[5]||"") + '">';
-});
-}
-
-// ================= ADD ORDERS =================
+// ===== Add multiple Orders =====
 function addOrders(){
-    const input = document.getElementById("addOrdersInput").value;
-    const orders = input.split(/\s+/).filter(v => v.trim() !== "");
-    if(orders.length === 0){ alert("Masukkan minimal satu Order!"); return; }
+  const input = document.getElementById("addOrdersInput").value;
+  const orders = input.split(/\s+/).filter(v => v.trim() !== "");
+  if(orders.length === 0){ 
+    alert("Masukkan minimal satu Order!"); 
+    return; 
+  }
 
-    orders.forEach(order => {
-        const orderVal = String(order).trim();
-        const wo = workOrders.find(o => String(o.order).trim() === orderVal);
-        if(wo){
-            aData.push([wo.room, wo.order, wo.description, wo.mat, "", "", {editing:false}]);
-        }else{
-            alert("Order '" + orderVal + "' tidak ditemukan di Work Order!");
-        }
-    });
-
-    document.getElementById("addOrdersInput").value = "";
-    buildAddMonthlyTable();
-}
-
-// ================= FILTER =================
-function applyAddMonthlyFilters(){
-    const fRoom = document.getElementById("filterRoom").value.toLowerCase();
-    const fOrder = document.getElementById("filterOrder").value.toLowerCase();
-
-    const table = document.getElementById("addMonthlyTable");
-    for(let i=1;i<table.rows.length;i++){
-        const room = table.rows[i].cells[0].textContent.toLowerCase();
-        const order = table.rows[i].cells[1].textContent.toLowerCase();
-        table.rows[i].style.display =
-            (room.includes(fRoom) && order.includes(fOrder)) ? "" : "none";
+  orders.forEach(order => {
+    const orderVal = String(order).trim();
+    const wo = workOrders.find(o => String(o.order).trim() === orderVal);
+    if(wo){
+      aData.push([wo.room, wo.order, wo.description, wo.mat, "", "", {editing:false}]);
+    }else{
+      alert("Order '" + orderVal + "' tidak ditemukan di Work Order!");
     }
+  });
+
+  document.getElementById("addOrdersInput").value = "";
+  buildAddMonthlyTable();
 }
 
-// ================= SAVE / LOAD JSON =================
-function saveJson(){
-    const blob = new Blob([JSON.stringify(aData)], {type: "application/json"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "wo_monthly.json";
-    a.click();
-    URL.revokeObjectURL(url);
+// ===== Build table =====
+function buildAddMonthlyTable(){
+  const container = document.getElementById("monthlyTableContainer");
+  if(!container) return;
+  let html = "<table border='1' cellpadding='5'><tr><th>Room</th><th>Order</th><th>Description</th><th>MAT</th><th>Month</th><th>Remark</th></tr>";
+  
+  for(let i=0;i<aData.length;i++){
+    const row = aData[i];
+    html += "<tr>";
+    html += "<td>"+row[0]+"</td>";
+    html += "<td>"+row[1]+"</td>";
+    html += "<td>"+row[2]+"</td>";
+    html += "<td>"+row[3]+"</td>";
+    html += "<td><input type='text' data-edit='Month' data-idx='"+i+"' value='"+(row[4]||"")+"'></td>";
+    html += "<td><input type='text' data-edit='Remark' data-idx='"+i+"' value='"+(row[5]||"")+"'></td>";
+    html += "</tr>";
+  }
+  html += "</table>";
+  container.innerHTML = html;
+
+  // attach event for inputs
+  const inputs = container.querySelectorAll("input[data-edit]");
+  inputs.forEach(inp=>{
+    inp.addEventListener("input",function(){
+      const idx = this.getAttribute("data-idx");
+      const field = this.getAttribute("data-edit");
+      if(field==="Month") aData[idx][4] = this.value;
+      if(field==="Remark") aData[idx][5] = this.value;
+    });
+  });
 }
 
-function loadJson(){
-    const inp = document.createElement("input");
-    inp.type = "file";
-    inp.accept = "application/json";
-    inp.onchange = e=>{
-        const file = e.target.files[0];
-        if(!file) return;
-        const reader = new FileReader();
-        reader.onload = evt=>{
-            try{
-                aData = JSON.parse(evt.target.result);
-                buildAddMonthlyTable();
-            }catch(err){
-                alert("Gagal membaca file JSON!");
-            }
-        };
-        reader.readAsText(file);
+// ===== Save JSON =====
+function saveMonthlyJSON(){
+  const blob = new Blob([JSON.stringify(aData)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "monthly.json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ===== Load JSON =====
+function loadMonthlyJSON(){
+  const inp = document.createElement("input");
+  inp.type = "file";
+  inp.accept = ".json";
+  inp.onchange = e => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = evt => {
+      aData = JSON.parse(evt.target.result);
+      buildAddMonthlyTable();
     };
-    inp.click();
+    reader.readAsText(file);
+  };
+  inp.click();
 }
 </script>
 </body>
