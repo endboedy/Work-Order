@@ -279,12 +279,11 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
     });
 })();
 </script>
-
-  <!-- ================= MENU 5 ================= -->
+<!-- ================= MENU 5 ================= -->
 <div id="menu5" class="menu" style="display:none;">
   <h2>📋 Menu 5 - Work Order</h2>
 
-  <!-- Form input add order -->
+  <!-- Input order -->
   <div style="margin-bottom:10px;">
     <label for="orderInput">Add Order:</label>
     <input type="text" id="orderInput" placeholder="Masukkan Order">
@@ -310,22 +309,33 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
 </div>
 
 <script>
-  // ====== Dummy data Menu 1 (lookup) ======
-  // di project asli ini ambil dari Menu 1
+  // ====== Dummy data dari Menu 1 (lookup) ======
   const menu1Data = [
     { order: "ORD001", room: "R1", mat: "MAT-11", description: "Engine Repair" },
     { order: "ORD002", room: "R2", mat: "MAT-22", description: "Transmission" },
     { order: "ORD003", room: "R3", mat: "MAT-33", description: "Hydraulic Pump" }
   ];
 
-  // ====== Data Menu 5 ======
   let menu5Data = [];
 
+  // ====== Show/Hide menu ======
+  function showMenu(n) {
+    document.querySelectorAll(".menu").forEach(m => m.style.display = "none");
+    const menu = document.getElementById("menu" + n);
+    if (menu) {
+      menu.style.display = "block";
+    } else {
+      console.error("Menu " + n + " tidak ditemukan!");
+    }
+  }
+
+  // ====== Menu 5 Function ======
   function addOrder() {
-    const orderVal = document.getElementById("orderInput").value.trim();
+    const input = document.getElementById("orderInput");
+    if (!input) return;
+    const orderVal = input.value.trim();
     if (!orderVal) return;
 
-    // lookup ke Menu 1
     const lookup = menu1Data.find(item => item.order === orderVal);
 
     menu5Data.push({
@@ -337,12 +347,13 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
       reman: ""
     });
 
-    document.getElementById("orderInput").value = "";
+    input.value = "";
     renderMenu5();
   }
 
   function renderMenu5() {
     const tbody = document.getElementById("menu5Table");
+    if (!tbody) return;
     tbody.innerHTML = "";
 
     menu5Data.forEach((row, index) => {
@@ -382,5 +393,7 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
     }
   }
 </script>
+
+  
 </body>
 </html>
