@@ -279,24 +279,22 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
     });
 })();
 </script>
-  
-<!-- ================= MENU 5 : Add WO Monthly ================= -->
+<!-- ============== MENU 5 : Add WO Monthly ================= -->
 <div id="panel-5" class="panel">
   <h3>Add WO Monthly</h3>
   <input type="text" id="addOrdersInput" placeholder="Masukkan No Order, pisahkan spasi">
   <button onclick="addOrders()">Add Orders</button>
-  <br><br>
   <div id="addOrdersTable"></div>
 </div>
 
 <script>
-// ================= DATA MENU 5 =================
-let aData = [];  // Data Add WO Monthly
+let aData = [];  // data khusus menu 5
 
-// ================= BUILD TABLE =================
 function buildAddMonthlyTable(){
   const container = document.getElementById("addOrdersTable");
-  if(!container) return;
+  if(!container || !document.getElementById("panel-5").classList.contains("active")) return;  
+  // 👆 tabel hanya dibangun jika menu 5 aktif
+
   let html = "<table border='1' cellpadding='5' cellspacing='0'><thead><tr>";
   const headers = ["Room","Order","Description","MAT","Month","Remark"];
   headers.forEach(h=>{ html += "<th>"+h+"</th>"; });
@@ -304,9 +302,8 @@ function buildAddMonthlyTable(){
 
   aData.forEach(function(row,i){
     html += "<tr>";
-    // semua editable kecuali Order
     html += "<td><input type='text' data-edit='Room' data-idx='"+i+"' value='"+(row[0]||"")+"'></td>";
-    html += "<td>"+(row[1]||"")+"</td>"; // Order fix
+    html += "<td>"+(row[1]||"")+"</td>";
     html += "<td><input type='text' data-edit='Desc' data-idx='"+i+"' value='"+(row[2]||"")+"'></td>";
     html += "<td><input type='text' data-edit='Mat' data-idx='"+i+"' value='"+(row[3]||"")+"'></td>";
     html += "<td><input type='text' data-edit='Month' data-idx='"+i+"' value='"+(row[4]||"")+"'></td>";
@@ -317,7 +314,6 @@ function buildAddMonthlyTable(){
   html += "</tbody></table>";
   container.innerHTML = html;
 
-  // listener utk input edit
   container.querySelectorAll("input[data-edit]").forEach(inp=>{
     inp.addEventListener("input",function(){
       const idx = parseInt(this.getAttribute("data-idx"));
@@ -331,7 +327,6 @@ function buildAddMonthlyTable(){
   });
 }
 
-// ================= ADD ORDERS =================
 function addOrders(){
   const input = document.getElementById("addOrdersInput").value;
   const orders = input.split(/\s+/).filter(v=>v.trim()!=="");
@@ -339,8 +334,8 @@ function addOrders(){
 
   orders.forEach(function(order){
     const orderVal = String(order).trim();
-
     let room="", mat="", desc="";
+
     if(wTable && wTable.tBodies[0]){ 
       const rows = Array.from(wTable.tBodies[0].rows);
       const idxOrder=getIndex(wHeaders,'order');
@@ -357,20 +352,12 @@ function addOrders(){
       });
     }
 
-    // selalu tambahkan meski room/mat/desc kosong
-    aData.push([
-      room,        // 0 Room
-      orderVal,    // 1 Order
-      desc,        // 2 Desc
-      mat,         // 3 MAT
-      "",          // 4 Month
-      ""           // 5 Remark
-    ]);
+    aData.push([room, orderVal, desc, mat, "", ""]);
   });
 
   document.getElementById("addOrdersInput").value = "";
   buildAddMonthlyTable();
 }
-</script>
+</script>  
 </body>
 </html>
