@@ -98,26 +98,8 @@ tbody tr:hover { background: #eef6ff; }
   </div>
   <table id="m-table" class="small"></table>
 </div>
-
-<!-- PANEL 5: Summary Report -->
-<div class="panel" id="panel-summary">
-  <div class="filter-container">
-    <label>No: <input type="text" id="s-filter-no" placeholder="filter No"></label>
-    <label>Room: <input type="text" id="s-filter-room" placeholder="filter Room"></label>
-    <label>Order: <input type="text" id="s-filter-order" placeholder="filter Order"></label>
-    <label>MAT: <input type="text" id="s-filter-mat" placeholder="filter MAT"></label>
-    <label>Description: <input type="text" id="s-filter-description" placeholder="filter Description"></label>
-    <label>Month: <input type="text" id="s-filter-month" placeholder="filter Month"></label>
-    <label>Reman: <input type="text" id="s-filter-reman" placeholder="filter Reman"></label>
-    <label>Action: <input type="text" id="s-filter-action" placeholder="filter Action"></label>
-    <div class="controls">
-      <input type="file" id="s-upload" accept=".xlsx" />
-      <button class="btn" id="s-clear">Clear filters</button>
-    </div>
-  </div>
-  <table id="s-table" class="small"></table>
-</div>
 <script>
+
 // ----------------- Helpers -----------------
 function formatDateFromSerialOrDate(v){if(v===null||v===undefined||v==='')return"";const o={day:'2-digit',month:'short',year:'numeric'};if(v instanceof Date)return v.toLocaleDateString('en-US',o).replace(/ /g,'-');if(typeof v==='number')return new Date(Math.round((v-25569)*86400*1000)).toLocaleDateString('en-US',o).replace(/ /g,'-');const p=Date.parse(String(v));if(!isNaN(p))return new Date(p).toLocaleDateString('en-US',o).replace(/ /g,'-');return String(v);}
 function formatCurrency(v){if(v===null||v===undefined||v==='')return"";const n=Number(String(v).replace(/[^0-9.-]/g,''));return !isNaN(n)?("$"+Math.round(n).toLocaleString()):String(v);}
