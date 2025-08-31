@@ -289,8 +289,6 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
   <h3>Add WO Monthly</h3>
   <div class="filter-container">
     <label>Order: <input type="text" id="a-order" placeholder="Order"></label>
-    <label>Month: <input type="text" id="a-month" placeholder="Month"></label>
-    <label>Reman: <input type="text" id="a-reman" placeholder="Reman"></label>
     <button class="btn" id="a-add">Add</button>
   </div>
   <table id="a-table" class="small"></table>
@@ -305,12 +303,65 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
 
 <script>
 // ----------------- Menu 5: Add WO Monthly -----------------
-let aHeaders=["Room","Order","Description","MAT","Month","Reman"];
+let aHeaders=["Room","Order","Description","MAT","Month","Reman","Action"];
 let aData=[]; 
 const aTable=document.getElementById("a-table");
 
 function buildAddMonthlyTable(){
-    buildTableFromJson(aTable,aHeaders,aData);
+    aTable.innerHTML="";
+    const thead=document.createElement("thead");
+    const trh=document.createElement("tr");
+    aHeaders.forEach(h=>{
+        const th=document.createElement("th");
+        th.textContent=h;
+        trh.appendChild(th);
+    });
+    thead.appendChild(trh);
+    aTable.appendChild(thead);
+
+    const tbody=document.createElement("tbody");
+    aData.forEach((row,idx)=>{
+        const tr=document.createElement("tr");
+        row.forEach((val,colIdx)=>{
+            const td=document.createElement("td");
+            if(aHeaders[colIdx]==="Month" || aHeaders[colIdx]==="Reman"){
+                const inp=document.createElement("input");
+                inp.type="text";
+                inp.value=val||"";
+                inp.disabled=!row.editing;
+                inp.addEventListener("input",e=>{
+                    aData[idx][colIdx]=e.target.value;
+                });
+                td.appendChild(inp);
+            } else {
+                td.textContent=val;
+            }
+            tr.appendChild(td);
+        });
+        // action buttons
+        const tdAct=document.createElement("td");
+        if(row.editing){
+            const btnSave=document.createElement("button");
+            btnSave.textContent="Save";
+            btnSave.className="btn";
+            btnSave.onclick=()=>{row.editing=false;buildAddMonthlyTable();};
+            tdAct.appendChild(btnSave);
+        }else{
+            const btnEdit=document.createElement("button");
+            btnEdit.textContent="Edit";
+            btnEdit.className="btn";
+            btnEdit.onclick=()=>{row.editing=true;buildAddMonthlyTable();};
+            tdAct.appendChild(btnEdit);
+        }
+        const btnDel=document.createElement("button");
+        btnDel.textContent="Delete";
+        btnDel.className="btn";
+        btnDel.onclick=()=>{aData.splice(idx,1);buildAddMonthlyTable();};
+        tdAct.appendChild(btnDel);
+        tr.appendChild(tdAct);
+        tbody.appendChild(tr);
+    });
+    aTable.appendChild(tbody);
     applyAddMonthlyFilters();
 }
 
@@ -334,17 +385,17 @@ function findWorkOrder(order){
     return null;
 }
 
+// Tambah Order
 document.getElementById("a-add").addEventListener("click",()=>{
     const order=document.getElementById("a-order").value.trim();
-    const month=document.getElementById("a-month").value.trim();
-    const reman=document.getElementById("a-reman").value.trim();
     if(!order){alert("Order wajib diisi!");return;}
     const base=findWorkOrder(order);
     if(!base){alert("Order tidak ditemukan di Work Order!");return;}
-    aData.push([base.room,order,base.desc,base.mat,month,reman]);
+    aData.push([base.room,order,base.desc,base.mat,"","",{editing:false}]);
     buildAddMonthlyTable();
 });
 
+// Filter
 function applyAddMonthlyFilters(){
     const fRoom=(document.getElementById("a-filter-room").value||"").toLowerCase();
     const fOrder=(document.getElementById("a-filter-order").value||"").toLowerCase();
@@ -369,7 +420,8 @@ document.getElementById("a-clear").addEventListener("click",()=>{
 
 // Save JSON
 document.getElementById("a-save").addEventListener("click",()=>{
-    const blob=new Blob([JSON.stringify(aData)],{type:"application/json"});
+    const dataToSave=aData.map(r=>r.slice(0,6)); // tanpa field editing
+    const blob=new Blob([JSON.stringify(dataToSave)],{type:"application/json"});
     const url=URL.createObjectURL(blob);
     const a=document.createElement("a");
     a.href=url;a.download="wo_monthly.json";a.click();
@@ -381,7 +433,10 @@ document.getElementById("a-load").addEventListener("change",function(e){
     const f=e.target.files[0]; if(!f) return;
     const reader=new FileReader();
     reader.onload=function(ev){
-        try{aData=JSON.parse(ev.target.result);}catch(err){alert("Invalid JSON");return;}
+        try{
+            const arr=JSON.parse(ev.target.result);
+            aData=arr.map(r=>[...r,{editing:false}]);
+        }catch(err){alert("Invalid JSON");return;}
         buildAddMonthlyTable();
     };
     reader.readAsText(f);
