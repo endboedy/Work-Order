@@ -375,8 +375,8 @@ function editRow(i){
 }
 
 function saveRow(i){
-    const monthInput = aTable.querySelector(input[data-edit="Month"][data-idx="${i}"]);
-    const remanInput = aTable.querySelector(input[data-edit="Reman"][data-idx="${i}"]);
+    const monthInput = aTable.querySelector(`input[data-edit="Month"][data-idx="${i}"]`);
+    const remanInput = aTable.querySelector(`input[data-edit="Reman"][data-idx="${i}"]`);
 
     aData[i][4] = monthInput ? monthInput.value : "";
     aData[i][5] = remanInput ? remanInput.value : "";
