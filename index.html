@@ -280,20 +280,20 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
 })();
 </script>
 
-  <!-- ============== MENU 5 : Add WO Monthly ================= -->
-<div id="menu5" style="display:none;">
-  <h3>Add WO Monthly</h3>
-  <textarea id="orderInput" placeholder="Paste multiple Order numbers (pisahkan spasi / enter)" style="width:100%; height:60px;"></textarea><br>
-  <button onclick="addOrders()">Add Orders</button>
-  <button onclick="saveJSON()">Save JSON</button>
-  <button onclick="loadJSON()">Load JSON</button>
-  <br><br>
-  Filter Room: <input type="text" id="filterRoom" onkeyup="renderTable()">
-  Filter Order: <input type="text" id="filterOrder" onkeyup="renderTable()">
-  <br><br>
-  
-  <table border="1" width="100%" id="orderTable">
-    <thead>
+  <!-- ================= MENU 5 ================= -->
+<div id="menu5" class="menu" style="display:none;">
+  <h2>📋 Menu 5 - Work Order</h2>
+
+  <!-- Form input add order -->
+  <div style="margin-bottom:10px;">
+    <label for="orderInput">Add Order:</label>
+    <input type="text" id="orderInput" placeholder="Masukkan Order">
+    <button onclick="addOrder()">Add</button>
+  </div>
+
+  <!-- Tabel hasil -->
+  <table border="1" cellpadding="6" cellspacing="0" style="width:100%; border-collapse:collapse;">
+    <thead style="background:#f2f2f2;">
       <tr>
         <th>No</th>
         <th>Room</th>
@@ -305,125 +305,82 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
         <th>Action</th>
       </tr>
     </thead>
-    <tbody></tbody>
+    <tbody id="menu5Table"></tbody>
   </table>
 </div>
 
 <script>
-let menu1Data = [
-  // contoh dummy data menu 1
-  { order: "4700735829", room: "A12", mat: "MAT-001", description: "Hydraulic Pump" },
-  { order: "4700735830", room: "B21", mat: "MAT-002", description: "Engine Overhaul" }
-];
+  // ====== Dummy data Menu 1 (lookup) ======
+  // di project asli ini ambil dari Menu 1
+  const menu1Data = [
+    { order: "ORD001", room: "R1", mat: "MAT-11", description: "Engine Repair" },
+    { order: "ORD002", room: "R2", mat: "MAT-22", description: "Transmission" },
+    { order: "ORD003", room: "R3", mat: "MAT-33", description: "Hydraulic Pump" }
+  ];
 
-let monthlyOrders = [];
+  // ====== Data Menu 5 ======
+  let menu5Data = [];
 
-function lookupMenu1(order) {
-  return menu1Data.find(d => d.order === order) || {};
-}
+  function addOrder() {
+    const orderVal = document.getElementById("orderInput").value.trim();
+    if (!orderVal) return;
 
-function addOrders() {
-  let input = document.getElementById("orderInput").value.trim();
-  if (!input) return;
-  let orders = input.split(/\s+/);
-  
-  orders.forEach(o => {
-    if (o && !monthlyOrders.some(m => m.order === o)) {
-      let ref = lookupMenu1(o);
-      monthlyOrders.push({
-        order: o,
-        room: ref.room || "",
-        mat: ref.mat || "",
-        description: ref.description || "",
-        month: "",
-        reman: "",
-        editing: false
-      });
-    }
-  });
-  document.getElementById("orderInput").value = "";
-  renderTable();
-}
+    // lookup ke Menu 1
+    const lookup = menu1Data.find(item => item.order === orderVal);
 
-function renderTable() {
-  let tbody = document.querySelector("#orderTable tbody");
-  tbody.innerHTML = "";
+    menu5Data.push({
+      order: orderVal,
+      room: lookup ? lookup.room : "",
+      mat: lookup ? lookup.mat : "",
+      description: lookup ? lookup.description : "",
+      month: "",
+      reman: ""
+    });
 
-  let filterRoom = document.getElementById("filterRoom").value.toLowerCase();
-  let filterOrder = document.getElementById("filterOrder").value.toLowerCase();
+    document.getElementById("orderInput").value = "";
+    renderMenu5();
+  }
 
-  monthlyOrders
-    .filter(o => 
-      (!filterRoom || (o.room && o.room.toLowerCase().includes(filterRoom))) &&
-      (!filterOrder || (o.order && o.order.toLowerCase().includes(filterOrder)))
-    )
-    .forEach((o, i) => {
-      let tr = document.createElement("tr");
+  function renderMenu5() {
+    const tbody = document.getElementById("menu5Table");
+    tbody.innerHTML = "";
+
+    menu5Data.forEach((row, index) => {
+      const tr = document.createElement("tr");
 
       tr.innerHTML = `
-        <td>${i+1}</td>
-        <td>${o.room || ""}</td>
-        <td>${o.order}</td>
-        <td>${o.mat || ""}</td>
-        <td>${o.description || ""}</td>
-        <td>${o.editing ? `<input value="${o.month}" onchange="monthlyOrders[${i}].month=this.value">` : o.month}</td>
-        <td>${o.editing ? `<input value="${o.reman}" onchange="monthlyOrders[${i}].reman=this.value">` : o.reman}</td>
+        <td>${index + 1}</td>
+        <td>${row.room || ""}</td>
+        <td>${row.order}</td>
+        <td>${row.mat || ""}</td>
+        <td>${row.description || ""}</td>
+        <td contenteditable="true" oninput="menu5Data[${index}].month=this.innerText">${row.month}</td>
+        <td contenteditable="true" oninput="menu5Data[${index}].reman=this.innerText">${row.reman}</td>
         <td>
-          ${o.editing 
-            ? `<a href='#' onclick='saveRow(${i})'>Save</a> | <a href='#' onclick='cancelEdit(${i})'>Cancel</a> | <a href='#' onclick='deleteRow(${i})'>Delete</a>`
-            : `<a href='#' onclick='editRow(${i})'>Edit</a> | <a href='#' onclick='deleteRow(${i})'>Delete</a>`
-          }
+          <span style="color:blue; cursor:pointer;" onclick="editRow(${index})">Edit</span> |
+          <span style="color:green; cursor:pointer;" onclick="saveRow(${index})">Save</span> |
+          <span style="color:red; cursor:pointer;" onclick="deleteRow(${index})">Delete</span>
         </td>
       `;
+
       tbody.appendChild(tr);
     });
-}
-
-function editRow(i) {
-  monthlyOrders[i].editing = true;
-  renderTable();
-}
-
-function saveRow(i) {
-  monthlyOrders[i].editing = false;
-  renderTable();
-}
-
-function cancelEdit(i) {
-  monthlyOrders[i].editing = false;
-  renderTable();
-}
-
-function deleteRow(i) {
-  if (confirm("Delete this order?")) {
-    monthlyOrders.splice(i,1);
-    renderTable();
   }
-}
 
-function saveJSON() {
-  let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(monthlyOrders));
-  let dl = document.createElement("a");
-  dl.setAttribute("href", dataStr);
-  dl.setAttribute("download", "monthlyOrders.json");
-  dl.click();
-}
+  function editRow(index) {
+    alert("Edit row ke-" + (index + 1) + " → silakan ubah langsung di kolom Month/Reman.");
+  }
 
-function loadJSON() {
-  let input = document.createElement("input");
-  input.type = "file";
-  input.accept = ".json";
-  input.onchange = e => {
-    let file = e.target.files[0];
-    let reader = new FileReader();
-    reader.onload = event => {
-      monthlyOrders = JSON.parse(event.target.result);
-      renderTable();
-    };
-    reader.readAsText(file);
-  };
-  input.click();
-}
-</script>  
+  function saveRow(index) {
+    alert("Data row ke-" + (index + 1) + " berhasil disimpan:\n" + JSON.stringify(menu5Data[index]));
+  }
+
+  function deleteRow(index) {
+    if (confirm("Hapus data row ke-" + (index + 1) + "?")) {
+      menu5Data.splice(index, 1);
+      renderMenu5();
+    }
+  }
+</script>
 </body>
 </html>
