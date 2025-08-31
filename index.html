@@ -33,7 +33,7 @@ tbody tr:hover { background: #eef6ff; }
   <div class="tab" id="tab-detail">Detail Part</div>
   <div class="tab" id="tab-ext">External Job</div>
   <div class="tab" id="tab-monthly">List WO Monthly</div>
-  <div class="tab" id="tab-addmonthly">Add WO Monthly</div> 
+ <div class="tab" id="tab-addmonthly">Add WO Monthly</div> 
 </div>
 
 <!-- PANEL 1: Work Order -->
@@ -99,6 +99,24 @@ tbody tr:hover { background: #eef6ff; }
   <table id="m-table" class="small"></table>
 </div>
 
+<!-- PANEL 5: Summary Report -->
+<div class="panel" id="panel-summary">
+  <div class="filter-container">
+    <label>No: <input type="text" id="s-filter-no" placeholder="filter No"></label>
+    <label>Room: <input type="text" id="s-filter-room" placeholder="filter Room"></label>
+    <label>Order: <input type="text" id="s-filter-order" placeholder="filter Order"></label>
+    <label>MAT: <input type="text" id="s-filter-mat" placeholder="filter MAT"></label>
+    <label>Description: <input type="text" id="s-filter-description" placeholder="filter Description"></label>
+    <label>Month: <input type="text" id="s-filter-month" placeholder="filter Month"></label>
+    <label>Reman: <input type="text" id="s-filter-reman" placeholder="filter Reman"></label>
+    <label>Action: <input type="text" id="s-filter-action" placeholder="filter Action"></label>
+    <div class="controls">
+      <input type="file" id="s-upload" accept=".xlsx" />
+      <button class="btn" id="s-clear">Clear filters</button>
+    </div>
+  </div>
+  <table id="s-table" class="small"></table>
+</div>
 <script>
 // ----------------- Helpers -----------------
 function formatDateFromSerialOrDate(v){if(v===null||v===undefined||v==='')return"";const o={day:'2-digit',month:'short',year:'numeric'};if(v instanceof Date)return v.toLocaleDateString('en-US',o).replace(/ /g,'-');if(typeof v==='number')return new Date(Math.round((v-25569)*86400*1000)).toLocaleDateString('en-US',o).replace(/ /g,'-');const p=Date.parse(String(v));if(!isNaN(p))return new Date(p).toLocaleDateString('en-US',o).replace(/ /g,'-');return String(v);}
@@ -110,8 +128,17 @@ function debounce(fn,wait){let t;return function(...a){clearTimeout(t);t=setTime
 function getIndex(headers,keyword){keyword=(keyword||'').toLowerCase();return headers.findIndex(h=>(h||'').toLowerCase().includes(keyword));}
 
 // ----------------- Tab Switch -----------------
-const tabs=document.querySelectorAll('.tab');const panels=document.querySelectorAll('.panel');
-tabs.forEach(tab=>{tab.addEventListener('click',()=>{tabs.forEach(t=>t.classList.remove('active'));tab.classList.add('active');panels.forEach(p=>p.classList.remove('active'));const pid='panel-'+tab.id.split('-')[1];document.getElementById(pid).classList.add('active');});});
+const tabs=document.querySelectorAll('.tab');
+const panels=document.querySelectorAll('.panel');
+tabs.forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    tabs.forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    panels.forEach(p=>p.classList.remove('active'));
+    const pid='panel-'+tab.id.split('-')[1];
+    document.getElementById(pid).classList.add('active');
+  });
+});
 
 // ----------------- Build Table -----------------
 function buildTableFromJson(tableEl,headers,rows){
@@ -279,131 +306,90 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
     });
 })();
 </script>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Work Order EM</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
-    .tab {
-      padding: 8px 15px;
-      border: 1px solid #ccc;
-      cursor: pointer;
-      border-radius: 6px;
-    }
-    .tab.active { background: #007BFF; color: white; }
-    .panel { display: none; }
-    .panel.active { display: block; }
-    input { margin: 5px; padding: 5px; }
-    button { padding: 5px 10px; cursor: pointer; }
-    table { border-collapse: collapse; margin-top: 10px; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
-  </style>
-</head>
-<body>
-  <h2>📋 Work Order EM</h2>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ----------------- MENU 5: Add WO Monthly -----------------
+function renderATable(data) {
+  const table = document.getElementById("a-table");
+  table.innerHTML = "";
 
-  <!-- ================= TAB MENU ================= -->
-  <div class="tabs">
-    <div class="tab active" id="tab-work">Work Order</div>
-    <div class="tab" id="tab-detail">Detail Part</div>
-    <div class="tab" id="tab-ext">External Job</div>
-    <div class="tab" id="tab-monthly">List WO Monthly</div>
-    <div class="tab" id="tab-addmonthly">Add WO Monthly</div>
-  </div>
+  if (data.length === 0) {
+    table.innerHTML = "<tr><td>No data found</td></tr>";
+    return;
+  }
 
-  <!-- ================= PANEL 1 ================= -->
-  <div class="panel active" id="panel-work">
-    <h3>Work Order</h3>
-    <p>Isi tabel Work Order kamu di sini...</p>
-  </div>
+  // buat header
+  const header = table.createTHead();
+  const headerRow = header.insertRow();
+  Object.keys(data[0]).forEach(key => {
+    const th = document.createElement("th");
+    th.textContent = key;
+    headerRow.appendChild(th);
+  });
 
-  <!-- ================= PANEL 2 ================= -->
-  <div class="panel" id="panel-detail">
-    <h3>Detail Part</h3>
-    <p>Isi tabel Detail Part di sini...</p>
-  </div>
-
-  <!-- ================= PANEL 3 ================= -->
-  <div class="panel" id="panel-ext">
-    <h3>External Job</h3>
-    <p>Isi tabel External Job di sini...</p>
-  </div>
-
-  <!-- ================= PANEL 4 ================= -->
-  <div class="panel" id="panel-monthly">
-    <h3>List WO Monthly</h3>
-    <p>Daftar WO Monthly akan ditampilkan di sini...</p>
-  </div>
-
-  <!-- ================= PANEL 5: ADD WO MONTHLY ================= -->
-  <div class="panel" id="panel-addmonthly">
-    <h3>Add WO Monthly</h3>
-    <div>
-      <label>Order:</label>
-      <input type="text" id="orderInput">
-      <label>Month:</label>
-      <input type="text" id="monthInput" placeholder="ex: August">
-      <label>Reman:</label>
-      <input type="text" id="remanInput">
-      <button onclick="addOrder()">Add Order</button>
-    </div>
-
-    <div id="orderList" style="margin-top:15px;">
-      <!-- List WO Monthly akan muncul di sini -->
-    </div>
-  </div>
-
- 
-    // ----------------- Tab Switch -----------------
-    const tabs=document.querySelectorAll('.tab');
-    const panels=document.querySelectorAll('.panel');
-
-    tabs.forEach(tab=>{
-      tab.addEventListener('click',()=>{
-        tabs.forEach(t=>t.classList.remove('active'));
-        tab.classList.add('active');
-        panels.forEach(p=>p.classList.remove('active'));
-        const pid='panel-'+tab.id.split('-')[1];
-        document.getElementById(pid).classList.add('active');
-      });
+  // isi data
+  const tbody = table.createTBody();
+  data.forEach(row => {
+    const tr = tbody.insertRow();
+    Object.values(row).forEach(val => {
+      const td = tr.insertCell();
+      td.textContent = val;
     });
+  });
+}
 
-    // ----------------- Add WO Monthly -----------------
-    function addOrder(){
-      const order=document.getElementById("orderInput").value;
-      const month=document.getElementById("monthInput").value;
-      const reman=document.getElementById("remanInput").value;
+let aData = [];
 
-      if(order && month && reman){
-        const list=document.getElementById("orderList");
+// upload excel
+document.getElementById("a-upload").addEventListener("change", function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    const data = new Uint8Array(evt.target.result);
+    const workbook = XLSX.read(data, { type: "array" });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    aData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+    renderATable(aData);
+  };
+  reader.readAsArrayBuffer(file);
+});
 
-        if(!document.getElementById("orderTable")){
-          const table=document.createElement("table");
-          table.id="orderTable";
-          table.innerHTML="<tr><th>Order</th><th>Month</th><th>Reman</th></tr>";
-          list.appendChild(table);
-        }
+// filter
+function filterATable() {
+  const no = document.getElementById("a-filter-no").value.toLowerCase();
+  const room = document.getElementById("a-filter-room").value.toLowerCase();
+  const order = document.getElementById("a-filter-order").value.toLowerCase();
+  const mat = document.getElementById("a-filter-mat").value.toLowerCase();
+  const desc = document.getElementById("a-filter-desc").value.toLowerCase();
+  const month = document.getElementById("a-filter-month").value.toLowerCase();
+  const reman = document.getElementById("a-filter-reman").value.toLowerCase();
+  const action = document.getElementById("a-filter-action").value.toLowerCase();
 
-        const table=document.getElementById("orderTable");
-        const row=table.insertRow();
-        row.insertCell(0).textContent=order;
-        row.insertCell(1).textContent=month;
-        row.insertCell(2).textContent=reman;
+  const filtered = aData.filter(row =>
+    row.No.toString().toLowerCase().includes(no) &&
+    row.Room.toString().toLowerCase().includes(room) &&
+    row.Order.toString().toLowerCase().includes(order) &&
+    row.MAT.toString().toLowerCase().includes(mat) &&
+    row.Description.toString().toLowerCase().includes(desc) &&
+    row.Month.toString().toLowerCase().includes(month) &&
+    row.Reman.toString().toLowerCase().includes(reman) &&
+    row.Action.toString().toLowerCase().includes(action)
+  );
+  renderATable(filtered);
+}
 
-        document.getElementById("orderInput").value="";
-        document.getElementById("monthInput").value="";
-        document.getElementById("remanInput").value="";
-      } else {
-        alert("Mohon lengkapi semua field!");
-      }
-    }
-  </script>
+document.querySelectorAll("#panel-addmonthly input[type=text]").forEach(input => {
+  input.addEventListener("input", filterATable);
+});
+
+// clear filter
+document.getElementById("a-clear").addEventListener("click", function() {
+  document.querySelectorAll("#panel-addmonthly input[type=text]").forEach(input => input.value = "");
+  renderATable(aData);
+});
+</script>
+
+
 </body>
-</html>
-
-  
-    </body>
 </html>
