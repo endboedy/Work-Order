@@ -322,20 +322,20 @@ function buildAddMonthlyTable(){
 
     // rows
     aData.forEach((row,i)=>{
-        const tr = table.insertRow();
-        tr.insertCell().textContent = row[0];  // room
-        tr.insertCell().textContent = row[1];  // order
-        tr.insertCell().textContent = row[2];  // description
-        tr.insertCell().textContent = row[3];  // mat
+    const tr = table.insertRow();
+    tr.insertCell().textContent = row[0];  // room
+    tr.insertCell().textContent = row[1];  // order
+    tr.insertCell().textContent = row[2];  // description
+    tr.insertCell().textContent = row[3];  // mat
 
-        // Month input
-        const monthTd = tr.insertCell();
-        monthTd.innerHTML = <input type="text" data-edit="Month" data-idx="${i}" value="${row[4]}">;
+    // Month input
+    const monthTd = tr.insertCell();
+    monthTd.innerHTML = '<input type="text" data-edit="Month" data-idx="' + i + '" value="' + (row[4]||"") + '">';
 
-        // Reman input
-        const remanTd = tr.insertCell();
-        remanTd.innerHTML = <input type="text" data-edit="Reman" data-idx="${i}" value="${row[5]}">;
-    });
+    // Reman input
+    const remanTd = tr.insertCell();
+    remanTd.innerHTML = '<input type="text" data-edit="Reman" data-idx="' + i + '" value="' + (row[5]||"") + '">';
+});
 }
 
 // ================= ADD ORDERS =================
