@@ -33,6 +33,7 @@ tbody tr:hover { background: #eef6ff; }
   <div class="tab" id="tab-detail">Detail Part</div>
   <div class="tab" id="tab-ext">External Job</div>
   <div class="tab" id="tab-monthly">List WO Monthly</div>
+  <div class="tab" id="tab-addmonthly">Add WO Monthly</div>
 </div>
 
 <!-- PANEL 1: Work Order -->
@@ -278,5 +279,103 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
     });
 })();
 </script>
+  <!-- PANEL 5: Add WO Monthly -->
+<div class="panel" id="panel-addmonthly">
+  <h3>Add WO Monthly</h3>
+  <div class="filter-container">
+    <label>Order: <input type="text" id="a-order" placeholder="Order"></label>
+    <label>Month: <input type="text" id="a-month" placeholder="Month"></label>
+    <label>Reman: <input type="text" id="a-reman" placeholder="Reman"></label>
+    <button class="btn" id="a-add">Add</button>
+  </div>
+  <table id="a-table" class="small"></table>
+  <div class="filter-container">
+    <label>Filter Room: <input type="text" id="a-filter-room"></label>
+    <label>Filter Order: <input type="text" id="a-filter-order"></label>
+    <button class="btn" id="a-clear">Clear filters</button>
+    <button class="btn" id="a-save">Save JSON</button>
+    <input type="file" id="a-load" accept=".json" />
+  </div>
+</div>
+  // ----------------- Menu 5: Add WO Monthly -----------------
+let aHeaders=["Room","Order","Description","MAT","Month","Reman"];
+let aData=[]; 
+const aTable=document.getElementById("a-table");
+
+function buildAddMonthlyTable(){
+    buildTableFromJson(aTable,aHeaders,aData);
+    applyAddMonthlyFilters();
+}
+
+// Ambil data dari Menu 1 berdasarkan Order
+function findWorkOrder(order){
+    if(!wTable.tBodies[0]) return null;
+    const rows=Array.from(wTable.tBodies[0].rows);
+    const idxOrder=getIndex(wHeaders,"order");
+    const idxRoom=getIndex(wHeaders,"room");
+    const idxDesc=getIndex(wHeaders,"description");
+    const idxMat=getIndex(wHeaders,"mat");
+    for(const r of rows){
+        if(idxOrder>=0 && r.cells[idxOrder].textContent.trim()===order){
+            return {
+                room: idxRoom>=0?r.cells[idxRoom].textContent:"",
+                desc: idxDesc>=0?r.cells[idxDesc].textContent:"",
+                mat: idxMat>=0?r.cells[idxMat].textContent:""
+            };
+        }
+    }
+    return null;
+}
+
+document.getElementById("a-add").addEventListener("click",()=>{
+    const order=document.getElementById("a-order").value.trim();
+    const month=document.getElementById("a-month").value.trim();
+    const reman=document.getElementById("a-reman").value.trim();
+    if(!order){alert("Order wajib diisi!");return;}
+    const base=findWorkOrder(order);
+    if(!base){alert("Order tidak ditemukan di Work Order!");return;}
+    aData.push([base.room,order,base.desc,base.mat,month,reman]);
+    buildAddMonthlyTable();
+});
+
+function applyAddMonthlyFilters(){
+    const fRoom=(document.getElementById("a-filter-room").value||"").toLowerCase();
+    const fOrder=(document.getElementById("a-filter-order").value||"").toLowerCase();
+    if(!aTable.tBodies[0]) return;
+    const rows=Array.from(aTable.tBodies[0].rows);
+    const idxRoom=aHeaders.indexOf("Room");
+    const idxOrder=aHeaders.indexOf("Order");
+    rows.forEach(r=>{
+        let show=true;
+        if(fRoom && !(r.cells[idxRoom]?.textContent.toLowerCase()||"").includes(fRoom)) show=false;
+        if(show && fOrder && !(r.cells[idxOrder]?.textContent.toLowerCase()||"").includes(fOrder)) show=false;
+        r.style.display=show?"":"none";
+    });
+}
+document.querySelectorAll("#panel-addmonthly .filter-container input[type=text]").forEach(inp=>inp.addEventListener("input",debounce(applyAddMonthlyFilters,120)));
+document.getElementById("a-clear").addEventListener("click",()=>{
+    document.querySelectorAll("#panel-addmonthly .filter-container input[type=text]").forEach(i=>i.value="");
+    applyAddMonthlyFilters();
+});
+
+// Save JSON
+document.getElementById("a-save").addEventListener("click",()=>{
+    const blob=new Blob([JSON.stringify(aData)],{type:"application/json"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;a.download="wo_monthly.json";a.click();
+    URL.revokeObjectURL(url);
+});
+
+// Load JSON
+document.getElementById("a-load").addEventListener("change",function(e){
+    const f=e.target.files[0]; if(!f) return;
+    const reader=new FileReader();
+    reader.onload=function(ev){
+        try{aData=JSON.parse(ev.target.result);}catch(err){alert("Invalid JSON");return;}
+        buildAddMonthlyTable();
+    };
+    reader.readAsText(f);
+});
 </body>
 </html>
