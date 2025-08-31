@@ -281,18 +281,22 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
 </script>
 
   <!-- ============== MENU 5 : Add WO Monthly ================= -->
-<div id="panel-5" class="panel">
+<div id="panel-addmonthly" class="panel">
   <h3>Add WO Monthly</h3>
+
+  <!-- Input Order Numbers -->
   <textarea id="addOrdersInput" placeholder="Paste multiple Order numbers (pisahkan spasi / enter)" rows="3" style="width:100%"></textarea><br>
   <button class="btn" onclick="addOrders()">Add Orders</button>
   <button class="btn" onclick="saveJson5()">Save JSON</button>
   <button class="btn" onclick="loadJson5()">Load JSON</button>
 
+  <!-- Filter -->
   <div id="addMonthlyFilters" style="margin-top:10px;">
       Filter Room: <input type="text" id="filterRoom5" oninput="applyAddMonthlyFilters()">
       Filter Order: <input type="text" id="filterOrder5" oninput="applyAddMonthlyFilters()">
   </div>
 
+  <!-- Tabel -->
   <div id="addOrdersTable"></div>
 </div>
 
@@ -300,128 +304,81 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
 // === Data khusus Menu 5 ===
 let aData = [];
 
-// === Build Table ===
-function buildAddMonthlyTable(){
-  const container = document.getElementById("addOrdersTable");
-  if(!container) return;
-  if(!document.getElementById("panel-5").classList.contains("active")) return;
-
-  let html = "<table border='1' cellpadding='5' cellspacing='0'><thead><tr>";
-  const headers = ["Room","Order","Description","MAT","Month","Remark"];
-  headers.forEach(h=>{ html += "<th>"+h+"</th>"; });
-  html += "</tr></thead><tbody>";
-
-  aData.forEach(function(row,i){
-    html += "<tr>";
-    html += "<td><input type='text' data-edit='Room' data-idx='"+i+"' value='"+(row[0]||"")+"'></td>";
-    html += "<td>"+(row[1]||"")+"</td>";
-    html += "<td><input type='text' data-edit='Desc' data-idx='"+i+"' value='"+(row[2]||"")+"'></td>";
-    html += "<td><input type='text' data-edit='Mat' data-idx='"+i+"' value='"+(row[3]||"")+"'></td>";
-    html += "<td><input type='text' data-edit='Month' data-idx='"+i+"' value='"+(row[4]||"")+"'></td>";
-    html += "<td><input type='text' data-edit='Remark' data-idx='"+i+"' value='"+(row[5]||"")+"'></td>";
-    html += "</tr>";
+// Fungsi bangun tabel
+function buildAddMonthlyTable(data=aData){
+  let html = "<table class='data-table'><tr><th>No</th><th>Order</th><th>Room</th><th>Action</th></tr>";
+  data.forEach((row,i)=>{
+    html += `<tr>
+      <td>${i+1}</td>
+      <td contenteditable oninput="aData[${i}].order=this.innerText">${row.order}</td>
+      <td contenteditable oninput="aData[${i}].room=this.innerText">${row.room}</td>
+      <td><button onclick="deleteRow5(${i})">❌</button></td>
+    </tr>`;
   });
-
-  html += "</tbody></table>";
-  container.innerHTML = html;
-
-  container.querySelectorAll("input[data-edit]").forEach(inp=>{
-    inp.addEventListener("input",function(){
-      const idx = parseInt(this.getAttribute("data-idx"));
-      const field = this.getAttribute("data-edit");
-      if(field==="Room")   aData[idx][0] = this.value;
-      if(field==="Desc")   aData[idx][2] = this.value;
-      if(field==="Mat")    aData[idx][3] = this.value;
-      if(field==="Month")  aData[idx][4] = this.value;
-      if(field==="Remark") aData[idx][5] = this.value;
-    });
-  });
+  html += "</table>";
+  document.getElementById("addOrdersTable").innerHTML = html;
 }
 
-// === Add Orders ===
+// Tambah Orders dari textarea
 function addOrders(){
-  const input = document.getElementById("addOrdersInput").value;
-  const orders = input.split(/\s+/).filter(v=>v.trim()!=="");
-  if(orders.length===0){ alert("Masukkan minimal satu Order!"); return; }
-
-  orders.forEach(function(order){
-    const orderVal = String(order).trim();
-    let room="", mat="", desc="";
-
-    // lookup dari Work Order table jika ada
-    if(wTable && wTable.tBodies[0]){ 
-      const rows = Array.from(wTable.tBodies[0].rows);
-      const idxOrder=getIndex(wHeaders,'order');
-      const idxRoom=getIndex(wHeaders,'room');
-      const idxMat=getIndex(wHeaders,'mat');
-      const idxDesc=getIndex(wHeaders,'description');
-      rows.forEach(r=>{
-        const val=(r.cells[idxOrder]?.textContent||"").trim();
-        if(val===orderVal){
-          room = r.cells[idxRoom]?.textContent||"";
-          mat  = r.cells[idxMat]?.textContent||"";
-          desc = r.cells[idxDesc]?.textContent||"";
-        }
-      });
-    }
-
-    // tetap masuk meski lookup kosong
-    aData.push([room, orderVal, desc, mat, "", ""]);
+  const input = document.getElementById("addOrdersInput").value.trim();
+  if(!input) return;
+  const orders = input.split(/\s+/);
+  orders.forEach(o=>{
+    if(o) aData.push({order:o, room:""});
   });
-
-  document.getElementById("addOrdersInput").value = "";
+  document.getElementById("addOrdersInput").value="";
   buildAddMonthlyTable();
 }
 
-// === Filter ===
-function applyAddMonthlyFilters(){
-  const fRoom = document.getElementById("filterRoom5").value.toLowerCase();
-  const fOrder = document.getElementById("filterOrder5").value.toLowerCase();
-  const container = document.getElementById("addOrdersTable");
-  if(!container) return;
-
-  const rows = container.querySelectorAll("tbody tr");
-  rows.forEach(row=>{
-    const tds = row.querySelectorAll("td");
-    const roomVal = tds[0].querySelector("input").value.toLowerCase();
-    const orderVal = tds[1].textContent.toLowerCase();
-    if(roomVal.includes(fRoom) && orderVal.includes(fOrder)){
-      row.style.display = "";
-    }else{
-      row.style.display = "none";
-    }
-  });
+// Hapus row
+function deleteRow5(i){
+  aData.splice(i,1);
+  buildAddMonthlyTable();
 }
 
-// === Save & Load JSON ===
+// Filter Room & Order
+function applyAddMonthlyFilters(){
+  const fRoom=document.getElementById("filterRoom5").value.toLowerCase();
+  const fOrder=document.getElementById("filterOrder5").value.toLowerCase();
+  const filtered=aData.filter(r=>
+    r.room.toLowerCase().includes(fRoom) && r.order.toLowerCase().includes(fOrder)
+  );
+  buildAddMonthlyTable(filtered);
+}
+
+// Save JSON
 function saveJson5(){
-  const blob = new Blob([JSON.stringify(aData)],{type:"application/json"});
+  const blob=new Blob([JSON.stringify(aData)],{type:"application/json"});
   const a=document.createElement("a");
   a.href=URL.createObjectURL(blob);
   a.download="menu5_data.json";
   a.click();
 }
 
+// Load JSON
 function loadJson5(){
   const inp=document.createElement("input");
-  inp.type="file"; inp.accept="application/json";
+  inp.type="file"; inp.accept=".json";
   inp.onchange=e=>{
     const file=e.target.files[0];
+    if(!file) return;
     const reader=new FileReader();
     reader.onload=ev=>{
-      try{ aData=JSON.parse(ev.target.result)||[]; }
-      catch{ aData=[]; }
-      buildAddMonthlyTable();
+      try{
+        aData=JSON.parse(ev.target.result);
+        buildAddMonthlyTable();
+      }catch(err){alert("Invalid JSON");}
     };
     reader.readAsText(file);
   };
   inp.click();
 }
 
-// === Trigger build ketika tab 5 dibuka ===
-document.getElementById("tab-5").addEventListener("click",function(){
+// === Trigger build ketika tab dibuka ===
+document.getElementById("tab-addmonthly").addEventListener("click",function(){
   buildAddMonthlyTable();
 });
-</script>
+</script>  
   </body>
 </html>
