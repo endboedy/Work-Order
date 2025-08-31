@@ -308,6 +308,8 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
+
+  <script>
 // ----------------- MENU 5: Add WO Monthly -----------------
 function renderATable(data) {
   const table = document.getElementById("a-table");
@@ -338,22 +340,15 @@ function renderATable(data) {
   });
 }
 
-let aData = [];
+// data dummy (bisa kamu ganti dari backend / JSON / API)
+let aData = [
+  { No: 1, Room: "R1", Order: "WO-001", MAT: "MAT01", Description: "Check pump", Month: "Jan", Reman: "Yes", Action: "Done" },
+  { No: 2, Room: "R2", Order: "WO-002", MAT: "MAT02", Description: "Replace filter", Month: "Feb", Reman: "No", Action: "Pending" },
+  { No: 3, Room: "R3", Order: "WO-003", MAT: "MAT03", Description: "Service motor", Month: "Mar", Reman: "Yes", Action: "In Progress" }
+];
 
-// upload excel
-document.getElementById("a-upload").addEventListener("change", function(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(evt) {
-    const data = new Uint8Array(evt.target.result);
-    const workbook = XLSX.read(data, { type: "array" });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    aData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-    renderATable(aData);
-  };
-  reader.readAsArrayBuffer(file);
-});
+// pertama kali render
+renderATable(aData);
 
 // filter
 function filterATable() {
@@ -368,13 +363,13 @@ function filterATable() {
 
   const filtered = aData.filter(row =>
     row.No.toString().toLowerCase().includes(no) &&
-    row.Room.toString().toLowerCase().includes(room) &&
-    row.Order.toString().toLowerCase().includes(order) &&
-    row.MAT.toString().toLowerCase().includes(mat) &&
-    row.Description.toString().toLowerCase().includes(desc) &&
-    row.Month.toString().toLowerCase().includes(month) &&
-    row.Reman.toString().toLowerCase().includes(reman) &&
-    row.Action.toString().toLowerCase().includes(action)
+    row.Room.toLowerCase().includes(room) &&
+    row.Order.toLowerCase().includes(order) &&
+    row.MAT.toLowerCase().includes(mat) &&
+    row.Description.toLowerCase().includes(desc) &&
+    row.Month.toLowerCase().includes(month) &&
+    row.Reman.toLowerCase().includes(reman) &&
+    row.Action.toLowerCase().includes(action)
   );
   renderATable(filtered);
 }
@@ -389,7 +384,5 @@ document.getElementById("a-clear").addEventListener("click", function() {
   renderATable(aData);
 });
 </script>
-
-
 </body>
 </html>
