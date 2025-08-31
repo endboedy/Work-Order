@@ -284,14 +284,18 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
 })();
 </script>
 
-<!-- ----------------- PANEL 5: Add WO Monthly ----------------- -->
+<!-- PANEL 5: Add WO Monthly -->
 <div class="panel" id="panel-addmonthly">
   <h3>Add WO Monthly</h3>
   <div class="filter-container">
-    <label>Order: <input type="text" id="a-order" placeholder="Order"></label>
+    <label>Orders (pisahkan dengan koma atau enter):<br>
+      <textarea id="a-order" placeholder="WO123, WO124, WO125" rows="3" style="width:300px;"></textarea>
+    </label><br>
     <button class="btn" id="a-add">Add</button>
   </div>
+
   <table id="a-table" class="small"></table>
+
   <div class="filter-container">
     <label>Filter Room: <input type="text" id="a-filter-room"></label>
     <label>Filter Order: <input type="text" id="a-filter-order"></label>
@@ -307,65 +311,7 @@ let aHeaders=["Room","Order","Description","MAT","Month","Reman","Action"];
 let aData=[]; 
 const aTable=document.getElementById("a-table");
 
-function buildAddMonthlyTable(){
-    aTable.innerHTML="";
-    const thead=document.createElement("thead");
-    const trh=document.createElement("tr");
-    aHeaders.forEach(h=>{
-        const th=document.createElement("th");
-        th.textContent=h;
-        trh.appendChild(th);
-    });
-    thead.appendChild(trh);
-    aTable.appendChild(thead);
-
-    const tbody=document.createElement("tbody");
-    aData.forEach((row,idx)=>{
-        const tr=document.createElement("tr");
-        row.forEach((val,colIdx)=>{
-            const td=document.createElement("td");
-            if(aHeaders[colIdx]==="Month" || aHeaders[colIdx]==="Reman"){
-                const inp=document.createElement("input");
-                inp.type="text";
-                inp.value=val||"";
-                inp.disabled=!row.editing;
-                inp.addEventListener("input",e=>{
-                    aData[idx][colIdx]=e.target.value;
-                });
-                td.appendChild(inp);
-            } else {
-                td.textContent=val;
-            }
-            tr.appendChild(td);
-        });
-        // action buttons
-        const tdAct=document.createElement("td");
-        if(row.editing){
-            const btnSave=document.createElement("button");
-            btnSave.textContent="Save";
-            btnSave.className="btn";
-            btnSave.onclick=()=>{row.editing=false;buildAddMonthlyTable();};
-            tdAct.appendChild(btnSave);
-        }else{
-            const btnEdit=document.createElement("button");
-            btnEdit.textContent="Edit";
-            btnEdit.className="btn";
-            btnEdit.onclick=()=>{row.editing=true;buildAddMonthlyTable();};
-            tdAct.appendChild(btnEdit);
-        }
-        const btnDel=document.createElement("button");
-        btnDel.textContent="Delete";
-        btnDel.className="btn";
-        btnDel.onclick=()=>{aData.splice(idx,1);buildAddMonthlyTable();};
-        tdAct.appendChild(btnDel);
-        tr.appendChild(tdAct);
-        tbody.appendChild(tr);
-    });
-    aTable.appendChild(tbody);
-    applyAddMonthlyFilters();
-}
-
-// Ambil data dari Menu 1 berdasarkan Order
+// 🔎 lookup ke Menu 1
 function findWorkOrder(order){
     if(!wTable.tBodies[0]) return null;
     const rows=Array.from(wTable.tBodies[0].rows);
@@ -373,29 +319,70 @@ function findWorkOrder(order){
     const idxRoom=getIndex(wHeaders,"room");
     const idxDesc=getIndex(wHeaders,"description");
     const idxMat=getIndex(wHeaders,"mat");
+
+    if(idxOrder<0) return null;
     for(const r of rows){
-        if(idxOrder>=0 && r.cells[idxOrder].textContent.trim()===order){
+        const cellOrder=r.cells[idxOrder].textContent.trim();
+        if(cellOrder.toLowerCase()===order.toLowerCase()){
             return {
-                room: idxRoom>=0?r.cells[idxRoom].textContent:"",
-                desc: idxDesc>=0?r.cells[idxDesc].textContent:"",
-                mat: idxMat>=0?r.cells[idxMat].textContent:""
+                room: idxRoom>=0 ? r.cells[idxRoom].textContent : "",
+                desc: idxDesc>=0 ? r.cells[idxDesc].textContent : "",
+                mat:  idxMat>=0 ? r.cells[idxMat].textContent : ""
             };
         }
     }
     return null;
 }
 
-// Tambah Order
+// build table
+function buildAddMonthlyTable(){
+    const rows=aData.map((row,i)=>{
+        if(row.editing){
+            return [
+                row[0], row[1], row[2], row[3],
+                <input type="text" value="${row[4]||""}" data-edit="month" data-idx="${i}">,
+                <input type="text" value="${row[5]||""}" data-edit="reman" data-idx="${i}">,
+                `<button class="btn" onclick="saveRow(${i})">Save</button>
+                 <button class="btn" onclick="deleteRow(${i})">Delete</button>`
+            ];
+        }else{
+            return [
+                row[0], row[1], row[2], row[3],
+                row[4]||"", row[5]||"",
+                `<button class="btn" onclick="editRow(${i})">Edit</button>
+                 <button class="btn" onclick="deleteRow(${i})">Delete</button>`
+            ];
+        }
+    });
+    buildTableFromJson(aTable,aHeaders,rows);
+    applyAddMonthlyFilters();
+}
+
+// tambah order (banyak)
 document.getElementById("a-add").addEventListener("click",()=>{
-    const order=document.getElementById("a-order").value.trim();
-    if(!order){alert("Order wajib diisi!");return;}
-    const base=findWorkOrder(order);
-    if(!base){alert("Order tidak ditemukan di Work Order!");return;}
-    aData.push([base.room,order,base.desc,base.mat,"","",{editing:false}]);
+    const orders=document.getElementById("a-order").value
+                  .split(/[\n,]+/)
+                  .map(o=>o.trim())
+                  .filter(o=>o);
+    if(orders.length===0){ 
+        alert("Isi minimal 1 Order!");
+        return; 
+    }
+
+    orders.forEach(order=>{
+        const base=findWorkOrder(order);
+        if(!base){
+            alert("Order '"+order+"' tidak ditemukan di Work Order!");
+        } else {
+            aData.push([base.room,order,base.desc,base.mat,"","",{editing:false}]);
+        }
+    });
+
     buildAddMonthlyTable();
+    document.getElementById("a-order").value="";
 });
 
-// Filter
+// filter
 function applyAddMonthlyFilters(){
     const fRoom=(document.getElementById("a-filter-room").value||"").toLowerCase();
     const fOrder=(document.getElementById("a-filter-order").value||"").toLowerCase();
@@ -410,18 +397,27 @@ function applyAddMonthlyFilters(){
         r.style.display=show?"":"none";
     });
 }
-document.querySelectorAll("#panel-addmonthly .filter-container input[type=text]")
-    .forEach(inp=>inp.addEventListener("input",debounce(applyAddMonthlyFilters,120)));
-
+document.querySelectorAll("#panel-addmonthly .filter-container input[type=text]").forEach(inp=>inp.addEventListener("input",debounce(applyAddMonthlyFilters,120)));
 document.getElementById("a-clear").addEventListener("click",()=>{
     document.querySelectorAll("#panel-addmonthly .filter-container input[type=text]").forEach(i=>i.value="");
     applyAddMonthlyFilters();
 });
 
+// edit / save / delete
+function editRow(i){ aData[i].editing=true; buildAddMonthlyTable(); }
+function saveRow(i){
+    const monthInput=aTable.querySelector(input[data-edit="month"][data-idx="${i}"]);
+    const remanInput=aTable.querySelector(input[data-edit="reman"][data-idx="${i}"]);
+    aData[i][4]=monthInput.value;
+    aData[i][5]=remanInput.value;
+    aData[i].editing=false;
+    buildAddMonthlyTable();
+}
+function deleteRow(i){ aData.splice(i,1); buildAddMonthlyTable(); }
+
 // Save JSON
 document.getElementById("a-save").addEventListener("click",()=>{
-    const dataToSave=aData.map(r=>r.slice(0,6)); // tanpa field editing
-    const blob=new Blob([JSON.stringify(dataToSave)],{type:"application/json"});
+    const blob=new Blob([JSON.stringify(aData)],{type:"application/json"});
     const url=URL.createObjectURL(blob);
     const a=document.createElement("a");
     a.href=url;a.download="wo_monthly.json";a.click();
@@ -433,10 +429,7 @@ document.getElementById("a-load").addEventListener("change",function(e){
     const f=e.target.files[0]; if(!f) return;
     const reader=new FileReader();
     reader.onload=function(ev){
-        try{
-            const arr=JSON.parse(ev.target.result);
-            aData=arr.map(r=>[...r,{editing:false}]);
-        }catch(err){alert("Invalid JSON");return;}
+        try{aData=JSON.parse(ev.target.result);}catch(err){alert("Invalid JSON");return;}
         buildAddMonthlyTable();
     };
     reader.readAsText(f);
