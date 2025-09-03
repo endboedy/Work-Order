@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -7,7 +6,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 body { font-family: Arial; font-size: 12px; margin: 12px; }
-.tabs { display:flex; gap:8px; margin-bottom:12px; }
+.tabs { display:flex; gap:8px; margin-bottom:12px; flex-wrap: wrap; }
 .tab { padding:8px 14px; background:#e9f0ff; border-radius:6px; cursor:pointer; user-select:none; }
 .tab.active { background:#2f80ed; color:white; font-weight:600; }
 .panel { display:none; }
@@ -34,6 +33,7 @@ tbody tr:hover { background: #eef6ff; }
   <div class="tab" id="tab-detail">Detail Part</div>
   <div class="tab" id="tab-ext">External Job</div>
   <div class="tab" id="tab-monthly">List WO Monthly</div> 
+  <div class="tab" id="tab-inspect">I-Inspect</div>
 </div>
 
 <!-- PANEL 1: Work Order -->
@@ -98,12 +98,28 @@ tbody tr:hover { background: #eef6ff; }
   </div>
   <table id="m-table" class="small"></table>
 </div>
-<script>
 
+<!-- PANEL 5: I-Inspect -->
+<div class="panel" id="panel-inspect">
+  <div class="filter-container">
+    <label>PartNumber: <input type="text" id="i-filter-partnum" placeholder="filter PartNumber"></label>
+    <label>PartDescription: <input type="text" id="i-filter-partdesc" placeholder="filter PartDescription"></label>
+    <label>Notification Number: <input type="text" id="i-filter-notif" placeholder="filter Notification Number"></label>
+    <label>WO Part Number: <input type="text" id="i-filter-wopart" placeholder="filter WO Part Number"></label>
+    <label>WO Number: <input type="text" id="i-filter-wonum" placeholder="filter WO Number"></label>
+    <div class="controls">
+      <input type="file" id="i-upload" accept=".xlsx" />
+      <button class="btn" id="i-clear">Clear filters</button>
+    </div>
+  </div>
+  <table id="i-table" class="small"></table>
+</div>
+
+<script>
 // ----------------- Helpers -----------------
 function formatDateFromSerialOrDate(v){if(v===null||v===undefined||v==='')return"";const o={day:'2-digit',month:'short',year:'numeric'};if(v instanceof Date)return v.toLocaleDateString('en-US',o).replace(/ /g,'-');if(typeof v==='number')return new Date(Math.round((v-25569)*86400*1000)).toLocaleDateString('en-US',o).replace(/ /g,'-');const p=Date.parse(String(v));if(!isNaN(p))return new Date(p).toLocaleDateString('en-US',o).replace(/ /g,'-');return String(v);}
 function formatCurrency(v){if(v===null||v===undefined||v==='')return"";const n=Number(String(v).replace(/[^0-9.-]/g,''));return !isNaN(n)?("$"+Math.round(n).toLocaleString()):String(v);}
-function applyStyleToTd(td,col,val){if(!td)return;const c=String(col||'').toLowerCase();const v=(val===null||val===undefined)?'':String(val).trim();if(["order","created on","planning","target date","end date","cost","include","exclude"].includes(c))td.style.textAlign="right";else if(["user status","mat"].includes(c))td.style.textAlign="center";else td.style.textAlign="left";if(c==="status part"){if(v==="Complete"){td.style.backgroundColor="green";td.style.color="white";}else if(v==="Not Complete"){td.style.backgroundColor="red";td.style.color="white";}}else if(c==="aging"){const a=parseInt(v);if(!isNaN(a)){td.style.backgroundColor=(a<=30)?"green":"red";td.style.color="white";}}else if(c==="status amt"){if(v==="O"){td.style.backgroundColor="lightgray";td.style.color="black";}else if(v==="YTS"){td.style.backgroundColor="green";td.style.color="white";}else if(v==="IP"){td.style.backgroundColor="orange";td.style.color="red";}else if(v==="C"){td.style.backgroundColor="black";td.style.color="white";}}}
+function applyStyleToTd(td,col,val){if(!td)return;const c=String(col||'').toLowerCase();const v=(val===null||val===undefined)?'':String(val).trim();td.style.textAlign="left";}
 function parseValueForSort(t){const s=(t===null||t===undefined)?'':String(t).trim();if(s==='')return'';const n=Number(s.replace(/[^0-9.\-]/g,''));if(!isNaN(n)&&/[0-9]/.test(s))return n;const p=Date.parse(s);if(!isNaN(p))return p;return s.toLowerCase();}
 function clearSortIndicators(t){if(!t)return;t.querySelectorAll('th').forEach(th=>{th.classList.remove('sort-asc','sort-desc');delete th.dataset.sorted;});}
 function debounce(fn,wait){let t;return function(...a){clearTimeout(t);t=setTimeout(()=>fn.apply(this,a),wait);};}
@@ -120,127 +136,55 @@ function buildTableFromJson(tableEl,headers,rows){
     headers.forEach((h,i)=>{const th=document.createElement('th'); th.textContent=h; th.dataset.colIndex=i; th.addEventListener('click',()=>sortTableByIndex(tableEl,i,th)); tr.appendChild(th);});
     thead.appendChild(tr); tableEl.appendChild(thead);
     const tbody=document.createElement('tbody'); const frag=document.createDocumentFragment();
-    rows.forEach(r=>{const row=document.createElement('tr');for(let i=0;i<headers.length;i++){const col=headers[i]||'';let raw=(r&&r[i]!==undefined&&r[i]!==null)?r[i]:'';let txt='';const lc=col.toLowerCase(); if(["created on","planning","target date","end date"].includes(lc)) txt=formatDateFromSerialOrDate(raw);else if(["cost","include","exclude"].includes(lc)) txt=formatCurrency(raw);else{if(raw instanceof Date) txt=formatDateFromSerialOrDate(raw); else txt=String(raw);} const td=document.createElement('td'); td.textContent=txt; applyStyleToTd(td,col,txt); row.appendChild(td);}frag.appendChild(row);});
+    rows.forEach(r=>{const row=document.createElement('tr');for(let i=0;i<headers.length;i++){const col=headers[i]||'';let raw=(r&&r[i]!==undefined&&r[i]!==null)?r[i]:'';let txt='';if(raw instanceof Date) txt=formatDateFromSerialOrDate(raw); else txt=String(raw); const td=document.createElement('td'); td.textContent=txt; applyStyleToTd(td,col,txt); row.appendChild(td);}frag.appendChild(row);});
     tbody.appendChild(frag); tableEl.appendChild(tbody);
 }
-function sortTableByIndex(tableEl,colIndex,thElement){if(!tableEl||!tableEl.tBodies[0])return;const tbody=tableEl.tBodies[0];const asc=thElement.dataset.sorted!=='asc';clearSortIndicators(tableEl);thElement.dataset.sorted=asc?'asc':'desc';thElement.classList.add(asc?'sort-asc':'sort-desc');const rows=Array.from(tbody.rows);rows.sort((a,b)=>{const aText=(a.cells[colIndex]&&a.cells[colIndex].textContent)?a.cells[colIndex].textContent:'';const bText=(b.cells[colIndex]&&b.cells[colIndex].textContent)?b.cells[colIndex].textContent:'';const va=parseValueForSort(aText); const vb=parseValueForSort(bText);if(typeof va==='number'&&typeof vb==='number')return asc?(va-vb):(vb-va);if(typeof va==='number')return asc?-1:1;if(typeof vb==='number')return asc?1:-1;return asc?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va));});rows.forEach(r=>tbody.appendChild(r));}
+function sortTableByIndex(tableEl,colIndex,thElement){if(!tableEl||!tableEl.tBodies[0])return;const tbody=tableEl.tBodies[0];const asc=thElement.dataset.sorted!=='asc';clearSortIndicators(tableEl);thElement.dataset.sorted=asc?'asc':'desc';thElement.classList.add(asc?'sort-asc':'sort-desc');const rows=Array.from(tbody.rows);rows.sort((a,b)=>{const aText=(a.cells[colIndex]&&a.cells[colIndex].textContent)?a.cells[colIndex].textContent:'';const bText=(b.cells[colIndex]&&b.cells[colIndex].textContent)?b.cells[colIndex].textContent:'';const va=parseValueForSort(aText); const vb=parseValueForSort(bText);if(typeof va==='number'&&typeof vb==='number')return asc?(va-vb):(vb-va);return asc?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va));});rows.forEach(r=>tbody.appendChild(r));}
 
-
-// ----------------- Menu 1: Work Order -----------------
-let wHeaders=[]; const wTable=document.getElementById('w-table');
-document.getElementById('w-upload').addEventListener('change',function(e){
-    const f=e.target.files[0]; if(!f) return;
-    const reader=new FileReader();
-    reader.onload=function(ev){
-        const data=new Uint8Array(ev.target.result);
-        const wb=XLSX.read(data,{type:'array'});
-        const sheet=wb.Sheets[wb.SheetNames[0]];
-        const json=XLSX.utils.sheet_to_json(sheet,{header:1,raw:true});
-        if(!json||json.length===0){alert('No data');return;}
-        wHeaders=json[0].map(h=>h===null||h===undefined?'':String(h).trim());
-        const rows=json.slice(1); buildTableFromJson(wTable,wHeaders,rows); applyWorkFilters();
-    };
-    reader.readAsArrayBuffer(f);
-});
-function applyWorkFilters(){
-    const fRoom=(document.getElementById('w-filter-room').value||'').toLowerCase();
-    const fOrder=(document.getElementById('w-filter-order').value||'').toLowerCase();
-    const fMat=(document.getElementById('w-filter-mat').value||'').toLowerCase();
-    const fSection=(document.getElementById('w-filter-section').value||'').toLowerCase();
-    const fCph=(document.getElementById('w-filter-cph').value||'').toLowerCase();
-    const fStatus=(document.getElementById('w-filter-status').value||'').toLowerCase();
-    if(!wTable.tBodies[0]) return; const rows=Array.from(wTable.tBodies[0].rows);
-    const idxRoom=getIndex(wHeaders,'room'); const idxOrder=getIndex(wHeaders,'order'); const idxMat=getIndex(wHeaders,'mat'); const idxSection=getIndex(wHeaders,'section'); const idxCph=getIndex(wHeaders,'cph'); const idxStatus=getIndex(wHeaders,'status');
-    rows.forEach(row=>{
-        let show=true;
-        if(fRoom&&idxRoom>=0 && !(row.cells[idxRoom]?.textContent.toLowerCase()||'').includes(fRoom)) show=false;
-        if(show&&fOrder&&idxOrder>=0 && !(row.cells[idxOrder]?.textContent.toLowerCase()||'').includes(fOrder)) show=false;
-        if(show&&fMat&&idxMat>=0 && !(row.cells[idxMat]?.textContent.toLowerCase()||'').includes(fMat)) show=false;
-        if(show&&fSection&&idxSection>=0 && !(row.cells[idxSection]?.textContent.toLowerCase()||'').includes(fSection)) show=false;
-        if(show&&fCph&&idxCph>=0 && !(row.cells[idxCph]?.textContent.toLowerCase()||'').includes(fCph)) show=false;
-        if(show&&fStatus&&idxStatus>=0 && !(row.cells[idxStatus]?.textContent.toLowerCase()||'').includes(fStatus)) show=false;
-        row.style.display=show?'':'none';
+// ----------------- Function to create upload & filter for menu -----------------
+function setupMenu(menuId,tableId,filterIds){
+    let headers=[]; const table=document.getElementById(tableId);
+    document.getElementById(menuId+'-upload').addEventListener('change',function(e){
+        const f=e.target.files[0]; if(!f) return;
+        const reader=new FileReader();
+        reader.onload=function(ev){
+            const data=new Uint8Array(ev.target.result);
+            const wb=XLSX.read(data,{type:'array'});
+            const sheet=wb.Sheets[wb.SheetNames[0]];
+            const json=XLSX.utils.sheet_to_json(sheet,{header:1,raw:true});
+            if(!json||json.length===0){alert('No data');return;}
+            headers=json[0].map(h=>h===null||h===undefined?'':String(h).trim());
+            const rows=json.slice(1); buildTableFromJson(table,headers,rows); applyFilters();
+        };
+        reader.readAsArrayBuffer(f);
+    });
+    function applyFilters(){
+        if(!table.tBodies[0]) return; const rows=Array.from(table.tBodies[0].rows);
+        rows.forEach(row=>{
+            let show=true;
+            for(const fId of filterIds){
+                const val=(document.getElementById(fId).value||'').toLowerCase();
+                if(val){
+                    const idx=getIndex(headers,fId.replace(menuId+'-filter-','').replace(/-/g,' '));
+                    if(idx>=0 && !(row.cells[idx]?.textContent.toLowerCase()||'').includes(val)) show=false;
+                }
+            }
+            row.style.display=show?'':'none';
+        });
+    }
+    filterIds.forEach(fId=>document.getElementById(fId).addEventListener('input',debounce(applyFilters,120)));
+    document.getElementById(menuId+'-clear').addEventListener('click',()=>{
+        filterIds.forEach(fId=>document.getElementById(fId).value=''); applyFilters();
     });
 }
-document.querySelectorAll("#panel-work .filter-container input[type=text]").forEach(inp=>inp.addEventListener('input',debounce(applyWorkFilters,120)));
-document.getElementById('w-clear').addEventListener('click',()=>{
-    document.querySelectorAll("#panel-work .filter-container input[type=text]").forEach(i=>i.value=''); applyWorkFilters();
-});
 
-// ----------------- Menu 2: Detail Part -----------------
-let dHeaders=[]; const dTable=document.getElementById('d-table');
-document.getElementById('d-upload').addEventListener('change',function(e){
-    const f=e.target.files[0]; if(!f) return;
-    const reader=new FileReader();
-    reader.onload=function(ev){
-        const data=new Uint8Array(ev.target.result);
-        const wb=XLSX.read(data,{type:'array'});
-        const sheet=wb.Sheets[wb.SheetNames[0]];
-        const json=XLSX.utils.sheet_to_json(sheet,{header:1,raw:true});
-        if(!json||json.length===0){alert('No data');return;}
-        dHeaders=json[0].map(h=>h===null||h===undefined?'':String(h).trim());
-        const rows=json.slice(1); buildTableFromJson(dTable,dHeaders,rows); applyDetailFilters();
-    };
-    reader.readAsArrayBuffer(f);
-});
-function applyDetailFilters(){
-    const fOrder=(document.getElementById('d-filter-order').value||'').toLowerCase();
-    const fMatNum=(document.getElementById('d-filter-matnum').value||'').toLowerCase();
-    const fMatDesc=(document.getElementById('d-filter-matdesc').value||'').toLowerCase();
-    if(!dTable.tBodies[0]) return; const rows=Array.from(dTable.tBodies[0].rows);
-    const idxOrder=getIndex(dHeaders,'order');
-    const idxMatNum=getIndex(dHeaders,'material')!==-1?getIndex(dHeaders,'material'):getIndex(dHeaders,'material number');
-    const idxMatDesc=getIndex(dHeaders,'description')!==-1?getIndex(dHeaders,'description'):getIndex(dHeaders,'material description');
-    rows.forEach(row=>{
-        let show=true;
-        if(fOrder){if(idxOrder>=0){const txt=row.cells[idxOrder]?.textContent.toLowerCase()||''; if(!txt.includes(fOrder)) show=false;}else{if(!row.textContent.toLowerCase().includes(fOrder)) show=false;}}
-        if(show&&fMatNum){if(idxMatNum>=0){const txt=row.cells[idxMatNum]?.textContent.toLowerCase()||''; if(!txt.includes(fMatNum)) show=false;}else{if(!row.textContent.toLowerCase().includes(fMatNum)) show=false;}}
-        if(show&&fMatDesc){if(idxMatDesc>=0){const txt=row.cells[idxMatDesc]?.textContent.toLowerCase()||''; if(!txt.includes(fMatDesc)) show=false;}else{if(!row.textContent.toLowerCase().includes(fMatDesc)) show=false;}}
-        row.style.display=show?'':'none';
-    });
-}
-document.querySelectorAll("#panel-detail .filter-container input[type=text]").forEach(inp=>inp.addEventListener('input',debounce(applyDetailFilters,120)));
-document.getElementById('d-clear').addEventListener('click',()=>{document.querySelectorAll("#panel-detail .filter-container input[type=text]").forEach(i=>i.value=''); applyDetailFilters();});
+// ----------------- Setup Menus -----------------
+setupMenu('w','w-table',['w-filter-room','w-filter-order','w-filter-mat','w-filter-section','w-filter-cph','w-filter-status']);
+setupMenu('d','d-table',['d-filter-order','d-filter-matnum','d-filter-matdesc']);
+setupMenu('e','e-table',['e-filter-room','e-filter-order','e-filter-activity','e-filter-desc']);
+setupMenu('i','i-table',['i-filter-partnum','i-filter-partdesc','i-filter-notif','i-filter-wopart','i-filter-wonum']);
 
-// ----------------- Menu 3: External Job -----------------
-let eHeaders=[]; const eTable=document.getElementById('e-table');
-const allowedCols=["Room","Manufacturer model number","Order Number","Maintenance activity type","Field displaying user status","Description","Aging WO","Net Price in PO USD","Cost Element","Service number","Service Short Text","Name","Purchase Requisition Number","Purchasing Document Number","Entry Sheet Number"];
-document.getElementById('e-upload').addEventListener('change',function(e){
-    const f=e.target.files[0]; if(!f) return;
-    const reader=new FileReader();
-    reader.onload=function(ev){
-        const data=new Uint8Array(ev.target.result);
-        const wb=XLSX.read(data,{type:'array'});
-        const sheet=wb.Sheets[wb.SheetNames[0]];
-        const json=XLSX.utils.sheet_to_json(sheet,{header:1,raw:true});
-        if(!json||json.length===0){alert('No data');return;}
-        const rawHeaders=json[0].map(h=>h===null||h===undefined?'':String(h).trim());
-        eHeaders=rawHeaders.filter(h=>allowedCols.includes(h));
-        const rows=json.slice(1).map(r=>eHeaders.map(h=>{const idx=rawHeaders.indexOf(h); return idx>=0?r[idx]:"";}));
-        buildTableFromJson(eTable,eHeaders,rows); applyExtFilters();
-    };
-    reader.readAsArrayBuffer(f);
-});
-function applyExtFilters(){
-    const fRoom=(document.getElementById('e-filter-room').value||'').toLowerCase();
-    const fOrder=(document.getElementById('e-filter-order').value||'').toLowerCase();
-    const fAct=(document.getElementById('e-filter-activity').value||'').toLowerCase();
-    const fDesc=(document.getElementById('e-filter-desc').value||'').toLowerCase();
-    if(!eTable.tBodies[0]) return; const rows=Array.from(eTable.tBodies[0].rows);
-    const idxRoom=eHeaders.indexOf("Room"); const idxOrder=eHeaders.indexOf("Order Number"); const idxAct=eHeaders.indexOf("Maintenance activity type"); const idxDesc=eHeaders.indexOf("Description");
-    rows.forEach(row=>{
-        let show=true;
-        if(fRoom&&idxRoom>=0 && !(row.cells[idxRoom]?.textContent.toLowerCase()||'').includes(fRoom)) show=false;
-        if(show&&fOrder&&idxOrder>=0 && !(row.cells[idxOrder]?.textContent.toLowerCase()||'').includes(fOrder)) show=false;
-        if(show&&fAct&&idxAct>=0 && !(row.cells[idxAct]?.textContent.toLowerCase()||'').includes(fAct)) show=false;
-        if(show&&fDesc&&idxDesc>=0 && !(row.cells[idxDesc]?.textContent.toLowerCase()||'').includes(fDesc)) show=false;
-        row.style.display=show?'':'none';
-    });
-}
-document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(inp=>inp.addEventListener('input',debounce(applyExtFilters,120)));
-document.getElementById('e-clear').addEventListener('click',()=>{document.querySelectorAll("#panel-ext .filter-container input[type=text]").forEach(i=>i.value=''); applyExtFilters();});
-
-// ----------------- Menu 4: List WO Monthly -----------------
+// ----------------- Menu 4 Monthly -----------------
 (function(){
     const mTable=document.getElementById('m-table');
     function buildMonthlyTable(){
