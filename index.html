@@ -1,7 +1,8 @@
 <!DOCTYPE html>
+
 <html>
 <head>
-<meta charset="utf-8">
+<meta charset="utf-8"/>
 <title>WORK_ORDER_EM - Multi Menu</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -27,76 +28,71 @@ tbody tr:hover { background: #eef6ff; }
 </head>
 <body>
 <h2>WORK_ORDER_EM</h2>
-
 <div class="tabs">
-  <div class="tab active" id="tab-work">Work Order</div>
-  <div class="tab" id="tab-detail">Detail Part</div>
-  <div class="tab" id="tab-ext">External Job</div>
-  <div class="tab" id="tab-monthly">List WO Monthly</div>
-  <div class="tab" id="tab-inspect">I-Inspect</div>
+<div class="tab active" id="tab-work">Work Order</div>
+<div class="tab" id="tab-detail">Detail Part</div>
+<div class="tab" id="tab-ext">External Job</div>
+<div class="tab" id="tab-monthly">List WO Monthly</div>
+<div class="tab" id="tab-inspect">I-Inspect</div>
 </div>
-
 <!-- PANEL 1: Work Order -->
 <div class="panel active" id="panel-work">
-  <div class="filter-container">
-    <label>Room: <input type="text" id="w-filter-room" placeholder="filter Room"></label>
-    <label>Order: <input type="text" id="w-filter-order" placeholder="filter Order"></label>
-    <label>MAT: <input type="text" id="w-filter-mat" placeholder="filter MAT"></label>
-    <label>Section: <input type="text" id="w-filter-section" placeholder="filter Section"></label>
-    <label>CPH: <input type="text" id="w-filter-cph" placeholder="filter CPH"></label>
-    <label>Status: <input type="text" id="w-filter-status" placeholder="filter Status"></label>
-    <div class="controls">
-      <input type="file" id="w-upload" accept=".xlsx" />
-      <button class="btn" id="w-clear">Clear filters</button>
-    </div>
-  </div>
-  <table id="w-table" class="small"></table>
+<div class="filter-container">
+<label>Room: <input id="w-filter-room" placeholder="filter Room" type="text"/></label>
+<label>Order: <input id="w-filter-order" placeholder="filter Order" type="text"/></label>
+<label>MAT: <input id="w-filter-mat" placeholder="filter MAT" type="text"/></label>
+<label>Section: <input id="w-filter-section" placeholder="filter Section" type="text"/></label>
+<label>CPH: <input id="w-filter-cph" placeholder="filter CPH" type="text"/></label>
+<label>Status: <input id="w-filter-status" placeholder="filter Status" type="text"/></label>
+<div class="controls">
+<input accept=".xlsx" id="w-upload" type="file">
+<button class="btn" id="w-clear">Clear filters</button>
+</input></div>
 </div>
-
+<table class="small" id="w-table"></table>
+</div>
 <!-- PANEL 2: Detail Part -->
 <div class="panel" id="panel-detail">
-  <div class="filter-container">
-    <label>Order: <input type="text" id="d-filter-order" placeholder="filter Order"></label>
-    <label>Material Number: <input type="text" id="d-filter-matnum" placeholder="filter Material Number"></label>
-    <label>Material Description: <input type="text" id="d-filter-matdesc" placeholder="filter Material Description"></label>
-    <div class="controls">
-      <input type="file" id="d-upload" accept=".xlsx" />
-      <button class="btn" id="d-clear">Clear filters</button>
-    </div>
-  </div>
-  <table id="d-table" class="small"></table>
+<div class="filter-container">
+<label>Order: <input id="d-filter-order" placeholder="filter Order" type="text"/></label>
+<label>Material Number: <input id="d-filter-matnum" placeholder="filter Material Number" type="text"/></label>
+<label>Material Description: <input id="d-filter-matdesc" placeholder="filter Material Description" type="text"/></label>
+<div class="controls">
+<input accept=".xlsx" id="d-upload" type="file">
+<button class="btn" id="d-clear">Clear filters</button>
+</input></div>
 </div>
-
+<table class="small" id="d-table"></table>
+</div>
 <!-- PANEL 3: External Job -->
 <div class="panel" id="panel-ext">
-  <div class="filter-container">
-    <label>Room: <input type="text" id="e-filter-room" placeholder="filter Room"></label>
-    <label>Order: <input type="text" id="e-filter-order" placeholder="filter Order"></label>
-    <label>Activity: <input type="text" id="e-filter-activity" placeholder="filter Activity"></label>
-    <label>Description: <input type="text" id="e-filter-desc" placeholder="filter Description"></label>
-    <div class="controls">
-      <input type="file" id="e-upload" accept=".xlsx" />
-      <button class="btn" id="e-clear">Clear filters</button>
-    </div>
-  </div>
-  <table id="e-table" class="small"></table>
+<div class="filter-container">
+<label>Room: <input id="e-filter-room" placeholder="filter Room" type="text"/></label>
+<label>Order: <input id="e-filter-order" placeholder="filter Order" type="text"/></label>
+<label>Activity: <input id="e-filter-activity" placeholder="filter Activity" type="text"/></label>
+<label>Description: <input id="e-filter-desc" placeholder="filter Description" type="text"/></label>
+<div class="controls">
+<input accept=".xlsx" id="e-upload" type="file">
+<button class="btn" id="e-clear">Clear filters</button>
+</input></div>
 </div>
-
+<table class="small" id="e-table"></table>
+</div>
 <!-- PANEL 4: List WO Monthly -->
 <div class="panel" id="panel-monthly">
-  <div class="filter-container">
-    <label>Month: <input type="text" id="m-filter-month" placeholder="filter Month"></label>
-    <label>Room: <input type="text" id="m-filter-room" placeholder="filter Room"></label>
-    <label>User Status: <input type="text" id="m-filter-statususer" placeholder="filter User Status"></label>
-    <label>MAT: <input type="text" id="m-filter-mat" placeholder="filter MAT"></label>
-    <label>CPH: <input type="text" id="m-filter-cph" placeholder="filter CPH"></label>
-    <label>Section: <input type="text" id="m-filter-section" placeholder="filter Section"></label>
-    <label>Status AMT: <input type="text" id="m-filter-statusamt" placeholder="filter Status AMT"></label>
-    <div class="controls">
-        <button class="btn" id="m-clear">Clear filters</button>
-    </div>
-  </div>
-  <table id="m-table" class="small"></table>
+<div class="filter-container">
+<label>Month: <input id="m-filter-month" placeholder="filter Month" type="text"/></label>
+<label>Room: <input id="m-filter-room" placeholder="filter Room" type="text"/></label>
+<label>User Status: <input id="m-filter-statususer" placeholder="filter User Status" type="text"/></label>
+<label>MAT: <input id="m-filter-mat" placeholder="filter MAT" type="text"/></label>
+<label>CPH: <input id="m-filter-cph" placeholder="filter CPH" type="text"/></label>
+<label>Section: <input id="m-filter-section" placeholder="filter Section" type="text"/></label>
+<label>Status AMT: <input id="m-filter-statusamt" placeholder="filter Status AMT" type="text"/></label>
+<div class="controls">
+<button class="btn" id="m-clear">Clear filters</button>
+</div>
+</div>
+<table class="small" id="m-table"></table>
 </div>
 <script>
 
@@ -281,20 +277,19 @@ document.getElementById('e-clear').addEventListener('click',()=>{document.queryS
 </script>
 <!-- PANEL 5: I-Inspect -->
 <div class="panel" id="panel-inspect">
-  <div class="filter-container">
-    <label>PartNumber: <input type="text" id="i-filter-partnum" placeholder="filter PartNumber"></label>
-    <label>PartDescription: <input type="text" id="i-filter-partdesc" placeholder="filter PartDescription"></label>
-    <label>Notification_Number: <input type="text" id="i-filter-notif" placeholder="filter Notification_Number"></label>
-    <label>WO_Part_Number: <input type="text" id="i-filter-wopart" placeholder="filter WO_Part_Number"></label>
-    <label>WO_Number: <input type="text" id="i-filter-wonum" placeholder="filter WO_Number"></label>
-    <div class="controls">
-      <input type="file" id="i-upload" accept=".xlsx" />
-      <button class="btn" id="i-clear">Clear filters</button>
-    </div>
-  </div>
-  <table id="i-table" class="small"></table>
+<div class="filter-container">
+<label>PartNumber: <input id="i-filter-partnum" placeholder="filter PartNumber" type="text"/></label>
+<label>PartDescription: <input id="i-filter-partdesc" placeholder="filter PartDescription" type="text"/></label>
+<label>Notification_Number: <input id="i-filter-notif" placeholder="filter Notification_Number" type="text"/></label>
+<label>WO_Part_Number: <input id="i-filter-wopart" placeholder="filter WO_Part_Number" type="text"/></label>
+<label>WO_Number: <input id="i-filter-wonum" placeholder="filter WO_Number" type="text"/></label>
+<div class="controls">
+<input accept=".xlsx" id="i-upload" type="file">
+<button class="btn" id="i-clear">Clear filters</button>
+</input></div>
 </div>
-
+<table class="small" id="i-table"></table>
+</div>
 <script>
 // ----------------- Menu 5: I-Inspect -----------------
 let iHeaders = [];
@@ -355,5 +350,50 @@ document.getElementById('i-clear').addEventListener('click', ()=>{
     applyInspectFilters();
 });
 </script>
-</body>
+
+<div class="modal" id="popupModal" style="display:none; position:fixed; top:10%; left:10%; width:80%; height:80%; background:white; border:1px solid #ccc; overflow:auto; z-index:1000; padding:20px;">
+<h3>Detail Part for Selected Order</h3>
+<table class="small" id="popupTable" style="width:100%; border-collapse:collapse;"></table>
+<button onclick="document.getElementById('popupModal').style.display='none'">Close</button>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const wTable = document.getElementById("w-table");
+  const dTable = document.getElementById("d-table");
+  const popupTable = document.getElementById("popupTable");
+  const popupModal = document.getElementById("popupModal");
+
+  if (wTable) {
+    wTable.addEventListener("click", function(e) {
+      const cell = e.target;
+      const row = cell.parentElement;
+      const colIndex = Array.from(row.children).indexOf(cell);
+      if (colIndex === 2) { // kolom ke-3 (index 2)
+        const orderNumber = cell.innerText.trim();
+        const dRows = dTable.querySelectorAll("tbody tr");
+        popupTable.innerHTML = "";
+        const headerRow = dTable.querySelector("thead tr");
+        if (headerRow) {
+          const clonedHeader = headerRow.cloneNode(true);
+          popupTable.appendChild(clonedHeader);
+        }
+        let found = false;
+        dRows.forEach(dRow => {
+          const dCells = dRow.querySelectorAll("td");
+          if (dCells[1] && dCells[1].innerText.trim() === orderNumber) {
+            const clonedRow = dRow.cloneNode(true);
+            popupTable.appendChild(clonedRow);
+            found = true;
+          }
+        });
+        if (found) {
+          popupModal.style.display = "block";
+        } else {
+          alert("No matching detail found for Order Number: " + orderNumber);
+        }
+      }
+    });
+  }
+});
+</script></body>
 </html>
