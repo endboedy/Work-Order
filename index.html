@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 
+<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8"/>
@@ -14,6 +15,12 @@ body { font-family: Arial; font-size: 12px; margin: 12px; }
 .panel.active { display:block; }
 .filter-container { margin-bottom: 12px; padding: 10px; background-color: #f7f7f7; border-radius: 6px; }
 .filter-container label { margin-right: 8px; font-size: 13px; }
+#panel-work .filter-container input[type=text] {
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    text-transform: none;
+    autocomplete: off;
+}
 table { border-collapse: collapse; width: 100%; margin-top: 8px; }
 th, td { border: 1px solid #ccc; padding: 6px; }
 th { background-color: #eee; cursor: pointer; user-select: none; position: relative; }
@@ -29,28 +36,32 @@ tbody tr:hover { background: #eef6ff; }
 <body>
 <h2>WORK_ORDER_EM</h2>
 <div class="tabs">
-<div class="tab active" id="tab-work">Work Order</div>
-<div class="tab" id="tab-detail">Detail Part</div>
-<div class="tab" id="tab-ext">External Job</div>
-<div class="tab" id="tab-monthly">List WO Monthly</div>
-<div class="tab" id="tab-inspect">I-Inspect</div>
+  <div class="tab active" id="tab-work">Work Order</div>
+  <div class="tab" id="tab-detail">Detail Part</div>
+  <div class="tab" id="tab-ext">External Job</div>
+  <div class="tab" id="tab-monthly">List WO Monthly</div>
+  <div class="tab" id="tab-inspect">I-Inspect</div>
 </div>
+
+
 <!-- PANEL 1: Work Order -->
 <div class="panel active" id="panel-work">
-<div class="filter-container">
-<label>Room: <input id="w-filter-room" placeholder="filter Room" type="text"/></label>
-<label>Order: <input id="w-filter-order" placeholder="filter Order" type="text"/></label>
-<label>MAT: <input id="w-filter-mat" placeholder="filter MAT" type="text"/></label>
-<label>Section: <input id="w-filter-section" placeholder="filter Section" type="text"/></label>
-<label>CPH: <input id="w-filter-cph" placeholder="filter CPH" type="text"/></label>
-<label>Status: <input id="w-filter-status" placeholder="filter Status" type="text"/></label>
-<div class="controls">
-<input accept=".xlsx" id="w-upload" type="file">
-<button class="btn" id="w-clear">Clear filters</button>
-</input></div>
+  <div class="filter-container">
+    <label>Room: <input id="w-filter-room" placeholder="filter Room" type="text" autocomplete="off"/></label>
+    <label>Order: <input id="w-filter-order" placeholder="filter Order" type="text" autocomplete="off"/></label>
+    <label>MAT: <input id="w-filter-mat" placeholder="filter MAT" type="text" autocomplete="off"/></label>
+    <label>Section: <input id="w-filter-section" placeholder="filter Section" type="text" autocomplete="off"/></label>
+    <label>CPH: <input id="w-filter-cph" placeholder="filter CPH" type="text" autocomplete="off"/></label>
+    <label>Status: <input id="w-filter-status" placeholder="filter Status" type="text" autocomplete="off"/></label>
+    <div class="controls">
+      <input accept=".xlsx" id="w-upload" type="file"/>
+      <button class="btn" id="w-clear">Clear filters</button>
+    </div>
+  </div>
+  <table class="small" id="w-table"></table>
 </div>
-<table class="small" id="w-table"></table>
-</div>
+
+
 <!-- PANEL 2: Detail Part -->
 <div class="panel" id="panel-detail">
 <div class="filter-container">
@@ -123,44 +134,77 @@ function sortTableByIndex(tableEl,colIndex,thElement){if(!tableEl||!tableEl.tBod
 
 
 // ----------------- Menu 1: Work Order -----------------
-let wHeaders=[]; const wTable=document.getElementById('w-table');
+let wHeaders=[];
+const wTable=document.getElementById('w-table');
 document.getElementById('w-upload').addEventListener('change',function(e){
-    const f=e.target.files[0]; if(!f) return;
+    const f=e.target.files[0]; 
+    if(!f) return;
     const reader=new FileReader();
     reader.onload=function(ev){
         const data=new Uint8Array(ev.target.result);
         const wb=XLSX.read(data,{type:'array'});
         const sheet=wb.Sheets[wb.SheetNames[0]];
         const json=XLSX.utils.sheet_to_json(sheet,{header:1,raw:true});
-        if(!json||json.length===0){alert('No data');return;}
+        if(!json||json.length===0){alert('No data'); return;}
         wHeaders=json[0].map(h=>h===null||h===undefined?'':String(h).trim());
-        const rows=json.slice(1); buildTableFromJson(wTable,wHeaders,rows); applyWorkFilters();
+        const rows=json.slice(1); 
+        buildTableFromJson(wTable,wHeaders,rows); 
+        applyWorkFilters();
     };
     reader.readAsArrayBuffer(f);
 });
+
 function applyWorkFilters(){
-    const fRoom=(document.getElementById('w-filter-room').value||'').toLowerCase();
-    const fOrder=(document.getElementById('w-filter-order').value||'').toLowerCase();
-    const fMat=(document.getElementById('w-filter-mat').value||'').toLowerCase();
-    const fSection=(document.getElementById('w-filter-section').value||'').toLowerCase();
-    const fCph=(document.getElementById('w-filter-cph').value||'').toLowerCase();
-    const fStatus=(document.getElementById('w-filter-status').value||'').toLowerCase();
-    if(!wTable.tBodies[0]) return; const rows=Array.from(wTable.tBodies[0].rows);
-    const idxRoom=getIndex(wHeaders,'room'); const idxOrder=getIndex(wHeaders,'order'); const idxMat=getIndex(wHeaders,'mat'); const idxSection=getIndex(wHeaders,'section'); const idxCph=getIndex(wHeaders,'cph'); const idxStatus=getIndex(wHeaders,'status');
+    const fRoom = (document.getElementById('w-filter-room').value||'').toLowerCase().trim();
+    const fOrder = (document.getElementById('w-filter-order').value||'').toLowerCase().trim();
+    const fMat = (document.getElementById('w-filter-mat').value||'').toLowerCase().trim();
+    const fSection = (document.getElementById('w-filter-section').value||'').toLowerCase().trim();
+    const fCph = (document.getElementById('w-filter-cph').value||'').toLowerCase().trim();
+    const fStatus = (document.getElementById('w-filter-status').value||'').toLowerCase().trim();
+
+    if(!wTable.tBodies[0]) return; 
+    const rows = Array.from(wTable.tBodies[0].rows);
+
+    // Normalisasi header
+    const normalizedHeaders = wHeaders.map(h => String(h||'').toLowerCase().trim());
+
+    const idxRoom = normalizedHeaders.indexOf('room');
+    let idxOrder = normalizedHeaders.indexOf('order');
+    if(idxOrder===-1) idxOrder = normalizedHeaders.indexOf('order number'); // fallback
+    const idxMat = normalizedHeaders.indexOf('mat');
+    const idxSection = normalizedHeaders.indexOf('section');
+    const idxCph = normalizedHeaders.indexOf('cph');
+    const idxStatus = normalizedHeaders.indexOf('status');
+
     rows.forEach(row=>{
         let show=true;
-        if(fRoom&&idxRoom>=0 && !(row.cells[idxRoom]?.textContent.toLowerCase()||'').includes(fRoom)) show=false;
-        if(show&&fOrder&&idxOrder>=0 && !(row.cells[idxOrder]?.textContent.toLowerCase()||'').includes(fOrder)) show=false;
-        if(show&&fMat&&idxMat>=0 && !(row.cells[idxMat]?.textContent.toLowerCase()||'').includes(fMat)) show=false;
-        if(show&&fSection&&idxSection>=0 && !(row.cells[idxSection]?.textContent.toLowerCase()||'').includes(fSection)) show=false;
-        if(show&&fCph&&idxCph>=0 && !(row.cells[idxCph]?.textContent.toLowerCase()||'').includes(fCph)) show=false;
-        if(show&&fStatus&&idxStatus>=0 && !(row.cells[idxStatus]?.textContent.toLowerCase()||'').includes(fStatus)) show=false;
-        row.style.display=show?'':'none';
+
+        if(fRoom && idxRoom>=0 && !((row.cells[idxRoom]?.textContent||'').toLowerCase().includes(fRoom))) show=false;
+
+        if(show && fOrder){
+            if(idxOrder>=0){
+                const txt = row.cells[idxOrder]?.textContent.toLowerCase()||'';
+                if(!txt.includes(fOrder)) show=false;
+            } else {
+                // fallback: cari di seluruh row
+                if(!row.textContent.toLowerCase().includes(fOrder)) show=false;
+            }
+        }
+
+        if(show && fMat && idxMat>=0 && !((row.cells[idxMat]?.textContent||'').toLowerCase().includes(fMat))) show=false;
+        if(show && fSection && idxSection>=0 && !((row.cells[idxSection]?.textContent||'').toLowerCase().includes(fSection))) show=false;
+        if(show && fCph && idxCph>=0 && !((row.cells[idxCph]?.textContent||'').toLowerCase().includes(fCph))) show=false;
+        if(show && fStatus && idxStatus>=0 && !((row.cells[idxStatus]?.textContent||'').toLowerCase().includes(fStatus))) show=false;
+
+        row.style.display = show?'':'none';
     });
 }
+
+// ===== Event Listeners =====
 document.querySelectorAll("#panel-work .filter-container input[type=text]").forEach(inp=>inp.addEventListener('input',debounce(applyWorkFilters,120)));
 document.getElementById('w-clear').addEventListener('click',()=>{
-    document.querySelectorAll("#panel-work .filter-container input[type=text]").forEach(i=>i.value=''); applyWorkFilters();
+    document.querySelectorAll("#panel-work .filter-container input[type=text]").forEach(i=>i.value=''); 
+    applyWorkFilters();
 });
 
 // ----------------- Menu 2: Detail Part -----------------
