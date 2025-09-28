@@ -410,6 +410,7 @@
 
     <script>
 
+
 document.addEventListener("DOMContentLoaded", function () {
   const wTable = document.getElementById("w-table");
   const dTable = document.getElementById("d-table");
@@ -417,15 +418,45 @@ document.addEventListener("DOMContentLoaded", function () {
   const popupModal = document.getElementById("popupModal");
   const popupClose = document.getElementById("popupClose");
   const popupCopy = document.getElementById("popupCopy");
-});
 
-  // Event klik baris di wTable
+  // Tombol Close
+  popupClose.addEventListener("click", () => {
+    popupModal.style.display = "none";
+  });
+
+  // Tombol Copy
+  popupCopy.addEventListener("click", () => {
+    const styledTable = popupTable.cloneNode(true);
+
+    styledTable.querySelectorAll("th").forEach(th => {
+      th.style.backgroundColor = "#f2f2f2";
+      th.style.border = "1px solid #000";
+      th.style.padding = "4px";
+    });
+
+    styledTable.querySelectorAll("td").forEach(td => {
+      td.style.border = "1px solid #000";
+      td.style.padding = "4px";
+    });
+
+    const html = `<table style="border-collapse:collapse;">${styledTable.innerHTML}</table>`;
+    const blob = new Blob([html], { type: "text/html" });
+    const clipboardItem = new ClipboardItem({ "text/html": blob });
+
+    navigator.clipboard.write([clipboardItem]).then(() => {
+      alert("Copied as HTML table!");
+    }).catch(err => {
+      alert("Failed to copy: " + err);
+    });
+  });
+
+  // Tambahkan event klik baris wTable jika belum
   if (wTable) {
     wTable.addEventListener("click", function (e) {
       const cell = e.target;
       const row = cell.parentElement;
       const colIndex = Array.from(row.children).indexOf(cell);
-      if (colIndex === 2) { // kolom ke-3 (Order Number)
+      if (colIndex === 2) {
         const orderNumber = cell.innerText.trim();
         const dRows = dTable.querySelectorAll("tbody tr");
         const thead = popupTable.querySelector("thead");
@@ -458,33 +489,6 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
   }
-
-  // Tombol Close
-
-popupCopy.addEventListener("click", () => {
-  const styledTable = popupTable.cloneNode(true);
-
-  // Tambahkan style ke header dan border
-  styledTable.querySelectorAll("th").forEach(th => {
-    th.style.backgroundColor = "#f2f2f2";
-    th.style.border = "1px solid #000";
-    th.style.padding = "4px";
-  });
-
-  styledTable.querySelectorAll("td").forEach(td => {
-    td.style.border = "1px solid #000";
-    td.style.padding = "4px";
-  });
-
-  const html = `<table style="border-collapse:collapse;">${styledTable.innerHTML}</table>`;
-  const blob = new Blob([html], { type: "text/html" });
-  const clipboardItem = new ClipboardItem({ "text/html": blob });
-
-  navigator.clipboard.write([clipboardItem]).then(() => {
-    alert("Copied with styling!");
-  }).catch(err => {
-    alert("Failed to copy: " + err);
-  });
-});
+}); // ← ini penutup wajib
 </script></body>
     </html>
