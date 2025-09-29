@@ -62,19 +62,23 @@
     </div>
     
     
-    <!-- PANEL 2: Detail Part -->
-    <div class="panel" id="panel-detail">
-    <div class="filter-container">
-    <label>Order: <input id="d-filter-order" placeholder="filter Order" type="text"/></label>
-    <label>Material Number: <input id="d-filter-matnum" placeholder="filter Material Number" type="text"/></label>
-    <label>Material Description: <input id="d-filter-matdesc" placeholder="filter Material Description" type="text"/></label>
+
+<!-- PANEL 2: Detail Part -->
+<div class="panel" id="panel-detail">
+  <div class="filter-container">
+    <label>Room: <input id="d-filter-room" placeholder="filter Room" type="text" /></label>
+    <label>Order: <input id="d-filter-order" placeholder="filter Order" type="text" /></label>
+    <label>Material Number: <input id="d-filter-matnum" placeholder="filter Material Number" type="text" /></label>
+    <label>Material Description: <input id="d-filter-matdesc" placeholder="filter Material Description" type="text" /></label>
     <div class="controls">
-    <input accept=".xlsx" id="d-upload" type="file">
-    <button class="btn" id="d-clear">Clear filters</button>
-    </input></div>
+      <input accept=".xlsx" id="d-upload" type="file" />
+      <button class="btn" id="d-clear">Clear filters</button>
     </div>
-    <table class="small" id="d-table"></table>
-    </div>
+  </div>
+
+  <table class="small" id="d-table"></table>
+</div>
+
     <!-- PANEL 3: External Job -->
     <div class="panel" id="panel-ext">
     <div class="filter-container">
@@ -207,41 +211,105 @@
         applyWorkFilters();
     });
     
-    // ----------------- Menu 2: Detail Part -----------------
-    let dHeaders=[]; const dTable=document.getElementById('d-table');
-    document.getElementById('d-upload').addEventListener('change',function(e){
-        const f=e.target.files[0]; if(!f) return;
-        const reader=new FileReader();
-        reader.onload=function(ev){
-            const data=new Uint8Array(ev.target.result);
-            const wb=XLSX.read(data,{type:'array'});
-            const sheet=wb.Sheets[wb.SheetNames[0]];
-            const json=XLSX.utils.sheet_to_json(sheet,{header:1,raw:true});
-            if(!json||json.length===0){alert('No data');return;}
-            dHeaders=json[0].map(h=>h===null||h===undefined?'':String(h).trim());
-            const rows=json.slice(1); buildTableFromJson(dTable,dHeaders,rows); applyDetailFilters();
-        };
-        reader.readAsArrayBuffer(f);
-    });
-    function applyDetailFilters(){
-        const fOrder=(document.getElementById('d-filter-order').value||'').toLowerCase();
-        const fMatNum=(document.getElementById('d-filter-matnum').value||'').toLowerCase();
-        const fMatDesc=(document.getElementById('d-filter-matdesc').value||'').toLowerCase();
-        if(!dTable.tBodies[0]) return; const rows=Array.from(dTable.tBodies[0].rows);
-        const idxOrder=getIndex(dHeaders,'order');
-        const idxMatNum=getIndex(dHeaders,'material')!==-1?getIndex(dHeaders,'material'):getIndex(dHeaders,'material number');
-        const idxMatDesc=getIndex(dHeaders,'description')!==-1?getIndex(dHeaders,'description'):getIndex(dHeaders,'material description');
-        rows.forEach(row=>{
-            let show=true;
-            if(fOrder){if(idxOrder>=0){const txt=row.cells[idxOrder]?.textContent.toLowerCase()||''; if(!txt.includes(fOrder)) show=false;}else{if(!row.textContent.toLowerCase().includes(fOrder)) show=false;}}
-            if(show&&fMatNum){if(idxMatNum>=0){const txt=row.cells[idxMatNum]?.textContent.toLowerCase()||''; if(!txt.includes(fMatNum)) show=false;}else{if(!row.textContent.toLowerCase().includes(fMatNum)) show=false;}}
-            if(show&&fMatDesc){if(idxMatDesc>=0){const txt=row.cells[idxMatDesc]?.textContent.toLowerCase()||''; if(!txt.includes(fMatDesc)) show=false;}else{if(!row.textContent.toLowerCase().includes(fMatDesc)) show=false;}}
-            row.style.display=show?'':'none';
-        });
+
+// ----------------- Menu 2: Detail Part -----------------
+
+// ----------------- Menu 2: Detail Part -----------------
+let dHeaders = [];
+const dTable = document.getElementById('d-table');
+
+// Fungsi getIndex
+function getIndex(headers, key) {
+  return headers.findIndex(h => h.toLowerCase() === key.toLowerCase());
+}
+
+// Fungsi debounce
+function debounce(func, delay) {
+  let timeout;
+  return function(...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), delay);
+  };
+}
+
+// Upload dan parsing Excel
+document.getElementById('d-upload').addEventListener('change', function(e) {
+  const f = e.target.files[0];
+  if (!f) return;
+
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const data = new Uint8Array(ev.target.result);
+    const wb = XLSX.read(data, { type: 'array' });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const json = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true });
+
+    if (!json || json.length === 0) {
+      alert('No data');
+      return;
     }
-    document.querySelectorAll("#panel-detail .filter-container input[type=text]").forEach(inp=>inp.addEventListener('input',debounce(applyDetailFilters,120)));
-    document.getElementById('d-clear').addEventListener('click',()=>{document.querySelectorAll("#panel-detail .filter-container input[type=text]").forEach(i=>i.value=''); applyDetailFilters();});
-    
+
+    dHeaders = json[0].map(h => h === null || h === undefined ? '' : String(h).trim());
+    const rows = json.slice(1);
+    buildTableFromJson(dTable, dHeaders, rows);
+    applyDetailFilters();
+  };
+  reader.readAsArrayBuffer(f);
+});
+
+// Filter data
+function applyDetailFilters() {
+  const fRoom = (document.getElementById('d-filter-room').value || '').toLowerCase();
+  const fOrder = (document.getElementById('d-filter-order').value || '').toLowerCase();
+  const fMatNum = (document.getElementById('d-filter-matnum').value || '').toLowerCase();
+  const fMatDesc = (document.getElementById('d-filter-matdesc').value || '').toLowerCase();
+
+  if (!dTable.tBodies[0]) return;
+  const rows = Array.from(dTable.tBodies[0].rows);
+
+  const idxRoom = getIndex(dHeaders, 'room');
+  const idxOrder = getIndex(dHeaders, 'order');
+  const idxMatNum = getIndex(dHeaders, 'material') !== -1 ? getIndex(dHeaders, 'material') : getIndex(dHeaders, 'material number');
+  const idxMatDesc = getIndex(dHeaders, 'description') !== -1 ? getIndex(dHeaders, 'description') : getIndex(dHeaders, 'material description');
+
+  rows.forEach(row => {
+    let show = true;
+
+    if (fRoom && idxRoom >= 0) {
+      const txt = row.cells[idxRoom]?.textContent.toLowerCase() || '';
+      if (!txt.includes(fRoom)) show = false;
+    }
+
+    if (show && fOrder && idxOrder >= 0) {
+      const txt = row.cells[idxOrder]?.textContent.toLowerCase() || '';
+      if (!txt.includes(fOrder)) show = false;
+    }
+
+    if (show && fMatNum && idxMatNum >= 0) {
+      const txt = row.cells[idxMatNum]?.textContent.toLowerCase() || '';
+      if (!txt.includes(fMatNum)) show = false;
+    }
+
+    if (show && fMatDesc && idxMatDesc >= 0) {
+      const txt = row.cells[idxMatDesc]?.textContent.toLowerCase() || '';
+      if (!txt.includes(fMatDesc)) show = false;
+    }
+
+    row.style.display = show ? '' : 'none';
+  });
+}
+
+// Event listener input filter
+document.querySelectorAll("#panel-detail .filter-container input[type=text]").forEach(inp => {
+  inp.addEventListener('input', debounce(applyDetailFilters, 120));
+});
+
+// Tombol clear filter
+document.getElementById('d-clear').addEventListener('click', () => {
+  document.querySelectorAll("#panel-detail .filter-container input[type=text]").forEach(i => i.value = '');
+  applyDetailFilters();
+});
+
     // ----------------- Menu 3: External Job -----------------
     let eHeaders=[]; const eTable=document.getElementById('e-table');
     const allowedCols=["Room","Manufacturer model number","Order Number","Maintenance activity type","Field displaying user status","Description","Aging WO","Net Price in PO USD","Cost Element","Service number","Service Short Text","Name","Purchase Requisition Number","Purchasing Document Number","Entry Sheet Number"];
